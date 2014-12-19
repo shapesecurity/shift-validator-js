@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "esutils": "^1.1.6",
-    "shift-reducer": "^1.0.1"
+    "shift-reducer": "^1.0.2"
   },
   "devDependencies": {
     "6to5": "^1.14.14",

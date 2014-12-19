@@ -142,7 +142,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceIdentifier(node) {
-    let v = this.identity();
+    let v = this.identity;
     if (!isIdentifierName(node.name)) {
       v = v.addError(new ValidationError(node, "Identifier `name` must be a valid IdentifierName"));
     }
@@ -171,7 +171,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceLiteralNumericExpression(node) {
-    let v = this.identity();
+    let v = this.identity;
     if (node.value < 0 || node.value == 0 && 1 / node.value < 0) {
       v = v.addError(new ValidationError(node, "Numeric Literal node must be non-negative"));
     } else if (node.value !== node.value) {
@@ -183,7 +183,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceLiteralRegExpExpression(node) {
-    let v = this.identity();
+    let v = this.identity;
     const message = "LiteralRegExpExpresssion must contain a valid string representation of a RegExp",
       firstSlash = node.value.indexOf("/"),
       lastSlash = node.value.lastIndexOf("/");
