@@ -58,17 +58,23 @@ suite("unit", () => {
     invalidExpr(1, new Shift.LiteralRegExpExpression("/)/"))
   });
 
-  test("identifier name member must be a valid IdentifierName", () => {
+  test("Identifier name member must be a valid IdentifierName", () => {
     validExpr(new Shift.IdentifierExpression(new Shift.Identifier("x")));
     validExpr(new Shift.IdentifierExpression(new Shift.Identifier("$")));
     validExpr(new Shift.IdentifierExpression(new Shift.Identifier("_")));
     validExpr(new Shift.IdentifierExpression(new Shift.Identifier("_$0x")));
+    validExpr(new Shift.StaticMemberExpression(EXPR, ID));
+    validExpr(new Shift.StaticMemberExpression(EXPR, new Shift.Identifier("if")));
+    validExpr(new Shift.ObjectExpression([new Shift.DataProperty(prop("if"), EXPR)]));
     invalidExpr(1, new Shift.IdentifierExpression(new Shift.Identifier("")));
     invalidExpr(1, new Shift.IdentifierExpression(new Shift.Identifier("a-b")));
     invalidExpr(1, new Shift.IdentifierExpression(new Shift.Identifier("0x0")));
+    invalidExpr(1, new Shift.StaticMemberExpression(EXPR, new Shift.Identifier("")));
+    invalidExpr(1, new Shift.StaticMemberExpression(EXPR, new Shift.Identifier("0")));
+    invalidExpr(1, new Shift.StaticMemberExpression(EXPR, new Shift.Identifier("a-b")));
   });
 
-  test("Identifier name member must not be a reserved word", () => {
+  test("IdentifierExpression must not contain Identifier with reserved word name", () => {
     validExpr(new Shift.IdentifierExpression(new Shift.Identifier("varx")));
     validExpr(new Shift.IdentifierExpression(new Shift.Identifier("xvar")));
     validExpr(new Shift.IdentifierExpression(new Shift.Identifier("varif")));
@@ -77,6 +83,38 @@ suite("unit", () => {
     invalidExpr(1, new Shift.IdentifierExpression(new Shift.Identifier("if")));
     invalidExpr(1, new Shift.IdentifierExpression(new Shift.Identifier("var")));
     invalidExpr(1, new Shift.IdentifierExpression(new Shift.Identifier("function")));
+  });
+
+  test("FunctionExpression name must not be a reserved word", () => {
+    validExpr(new Shift.FunctionExpression(null, [], new Shift.FunctionBody([], [])));
+    validExpr(new Shift.FunctionExpression(ID, [], new Shift.FunctionBody([], [])));
+    invalidExpr(1, new Shift.FunctionExpression(new Shift.Identifier("if"), [], new Shift.FunctionBody([], [])));
+  });
+
+  test("FunctionDeclaration name must not be a reserved word", () => {
+    validStmt(new Shift.FunctionDeclaration(ID, [], new Shift.FunctionBody([], [])));
+    invalidStmt(1, new Shift.FunctionDeclaration(new Shift.Identifier("if"), [], new Shift.FunctionBody([], [])));
+  });
+
+  test("FunctionExpression parameters must not be reserved words", () => {
+    validExpr(new Shift.FunctionExpression(null, [], new Shift.FunctionBody([], [])));
+    validExpr(new Shift.FunctionExpression(null, [ID], new Shift.FunctionBody([], [])));
+    invalidExpr(1, new Shift.FunctionExpression(null, [new Shift.Identifier("if")], new Shift.FunctionBody([], [])));
+    invalidExpr(1, new Shift.FunctionExpression(null, [ID, new Shift.Identifier("if")], new Shift.FunctionBody([], [])));
+    invalidExpr(1, new Shift.FunctionExpression(null, [new Shift.Identifier("if"), ID], new Shift.FunctionBody([], [])));
+  });
+
+  test("FunctionDeclaration parameters must not be reserved words", () => {
+    validStmt(new Shift.FunctionDeclaration(ID, [], new Shift.FunctionBody([], [])));
+    validStmt(new Shift.FunctionDeclaration(ID, [ID], new Shift.FunctionBody([], [])));
+    invalidStmt(1, new Shift.FunctionDeclaration(ID, [new Shift.Identifier("if")], new Shift.FunctionBody([], [])));
+    invalidStmt(1, new Shift.FunctionDeclaration(ID, [ID, new Shift.Identifier("if")], new Shift.FunctionBody([], [])));
+    invalidStmt(1, new Shift.FunctionDeclaration(ID, [new Shift.Identifier("if"), ID], new Shift.FunctionBody([], [])));
+  });
+
+  test("Setter parameter must not be a reserved word", () => {
+    validExpr(new Shift.ObjectExpression([new Shift.Setter(prop(ID), ID, new Shift.FunctionBody([], []))]));
+    invalidExpr(1, new Shift.ObjectExpression([new Shift.Setter(prop(ID), new Shift.Identifier("if"), new Shift.FunctionBody([], []))]));
   });
 
   test("LabeledStatement must not be nested within a LabeledStatement with the same label", () => {
@@ -101,13 +139,6 @@ suite("unit", () => {
   test("LiteralNumericExpression nodes must be finite", () => {
     invalidExpr(1, new Shift.LiteralNumericExpression(1/0));
     invalidExpr(1, new Shift.LiteralNumericExpression(-1/0));
-  });
-
-  test("StaticMemberExpression property member must have a valid IdentifierName name member", () => {
-    invalidExpr(1, new Shift.StaticMemberExpression(EXPR, new Shift.Identifier("var")));
-    invalidExpr(1, new Shift.StaticMemberExpression(EXPR, new Shift.Identifier("")));
-    invalidExpr(1, new Shift.StaticMemberExpression(EXPR, new Shift.Identifier("0")));
-    invalidExpr(1, new Shift.StaticMemberExpression(EXPR, new Shift.Identifier("a-b")));
   });
 
   test("ObjectExpression conflicting data/get/set properties", () => {
