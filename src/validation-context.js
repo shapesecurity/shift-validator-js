@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import {keyword} from "esutils";
+const {isRestrictedWord, isReservedWordES5} = keyword;
+
 export class ValidationContext {
 
   constructor(freeBreakStatements, freeContinueStatements, usedLabelNames, freeJumpTargets, freeReturnStatements, errors, strictErrors) {
@@ -136,6 +139,24 @@ export class ValidationContext {
       this.errors,
       this.strictErrors
     );
+  }
+
+  checkReserved(identifier) {
+    if (isReservedWordES5(identifier.name, true)) {
+      if (isReservedWordES5(identifier.name, false)) {
+        return this.addError(new ValidationError(identifier, "Identifier must not be reserved word in this position"));
+      }
+      return this.addStrictError(new ValidationError(identifier, "Identifier must not be strict mode reserved word in this position"));
+    }
+    return this;
+  }
+
+  checkRestricted(identifier) {
+    let v = this.checkReserved(identifier);
+    if (isRestrictedWord(identifier.name)) {
+      return v.addStrictError(new ValidationError(identifier, "Identifier must not be restricted word in this position in strict mode"));
+    }
+    return v;
   }
 
   addError(e) {
