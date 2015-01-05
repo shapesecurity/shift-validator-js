@@ -16,7 +16,7 @@
 
 import reduce, {MonoidalReducer} from "shift-reducer";
 import {keyword} from "esutils";
-const {isRestrictedWord, isIdentifierName, isReservedWordES5, isReservedWordES6} = keyword;
+const {isIdentifierName} = keyword;
 
 import {ValidationContext, ValidationError} from "./validation-context";
 
@@ -44,8 +44,8 @@ export class Validator extends MonoidalReducer {
 
   reduceAssignmentExpression(node, binding, expression) {
     let v = super.reduceAssignmentExpression(node, binding, expression);
-    if (node.binding.type === "IdentifierExpression" && isRestrictedWord(node.binding.identifier.name)) {
-      v = v.addStrictError(new ValidationError(node, "IdentifierExpression must not be a restricted word"));
+    if (node.binding.type === "IdentifierExpression") {
+      v = v.checkRestricted(node.binding.identifier);
     }
     return v;
   }
@@ -58,11 +58,8 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceCatchClause(node, param, body) {
-    let v = super.reduceCatchClause(node, param, body);
-    if (isRestrictedWord(node.binding.name)) {
-      v = v.addStrictError(new ValidationError(node, "CatchClause binding must not be restricted in strict mode"));
-    }
-    return v;
+    return super.reduceCatchClause(node, param, body)
+      .checkRestricted(node.binding);
   }
 
   reduceContinueStatement(node, body, label) {
@@ -108,37 +105,24 @@ export class Validator extends MonoidalReducer {
   reduceFunctionDeclaration(node, name, parameters, functionBody) {
     let v = super.reduceFunctionDeclaration(node, name, parameters, functionBody)
       .clearUsedLabelNames()
-      .clearFreeReturnStatements();
+      .clearFreeReturnStatements()
+      .checkRestricted(node.name);
     if (!uniqueIdentifiers(node.parameters)) {
       v = v.addStrictError(new ValidationError(node, "FunctionDeclaration must have unique parameter names"));
     }
-    v = node.parameters.reduce((v1, param) => {
-      if (isRestrictedWord(param.name)) {
-        return v1.addStrictError(new ValidationError(param, "FunctionDeclaration parameter name must not be restricted word"));
-      }
-      return v1;
-    }, v);
-    if (isRestrictedWord(node.name.name)) {
-      v = v.addStrictError(new ValidationError(node, "FunctionDeclaration `name` must not be `eval` or `arguments` in strict mode"));
-    }
-    return v;
+    return node.parameters.reduce((v1, param) => v1.checkRestricted(param), v);
   }
 
   reduceFunctionExpression(node, name, parameters, functionBody) {
     let v = super.reduceFunctionExpression(node, name, parameters, functionBody)
       .clearFreeReturnStatements();
+    if (node.name != null) {
+      v = v.checkRestricted(node.name);
+    }
     if (!uniqueIdentifiers(node.parameters)) {
       v = v.addStrictError(new ValidationError(node, "FunctionExpression parameter names must be unique"));
     }
-    v = node.parameters.reduce((v1, param) => {
-      if (isRestrictedWord(param.name)) {
-        return v1.addStrictError(new ValidationError(param, "FunctionExpression parameter name must not be restricted word"));
-      }
-      return v1;
-    }, v);
-    return node.name == null || !isRestrictedWord(node.name.name)
-      ? v
-      : v.addStrictError(new ValidationError(node, "FunctionExpression `name` must not be `eval` or `arguments` in strict mode"));
+    return node.parameters.reduce((v1, param) => v1.checkRestricted(param), v);
   }
 
   reduceIdentifier(node) {
@@ -146,20 +130,12 @@ export class Validator extends MonoidalReducer {
     if (!isIdentifierName(node.name)) {
       v = v.addError(new ValidationError(node, "Identifier `name` must be a valid IdentifierName"));
     }
-    if (isReservedWordES5(node.name, false)) {
-      v = v.addError(new ValidationError(node, "Identifier `name` must not be a reserved word"));
-    }
     return v;
   }
 
   reduceIdentifierExpression(node, identifier) {
-    let v = super.reduceIdentifierExpression(node, identifier);
-    if (isReservedWordES5(node.identifier.name)) {
-      v = v.addStrictError(new ValidationError(node, "Reserved word used in IdentifierExpression"));
-    } else if (isReservedWordES6(node.identifier.name, true)) {
-      v = v.addStrictError(new ValidationError(node, "Strict mode reserved word used in IdentifierExpression"));
-    }
-    return v;
+    return super.reduceIdentifierExpression(node, identifier)
+      .checkReserved(node.identifier);
   }
 
   reduceLabeledStatement(node, label, body) {
@@ -244,8 +220,8 @@ export class Validator extends MonoidalReducer {
 
   reducePostfixExpression(node, operand) {
     let v = super.reducePostfixExpression(node, operand);
-    if ((node.operator === "++" || node.operator === "--") && node.operand.type === "IdentifierExpression" && isRestrictedWord(node.operand.identifier.name)) {
-      v = v.addStrictError(new ValidationError(node, "Restricted words must not be incremented/decremented in strict mode"));
+    if ((node.operator === "++" || node.operator === "--") && node.operand.type === "IdentifierExpression") {
+      v = v.checkRestricted(node.operand.identifier);
     }
     return v;
   }
@@ -254,8 +230,8 @@ export class Validator extends MonoidalReducer {
     let v = super.reducePrefixExpression(node, operand);
     if (node.operator === "delete" && node.operand.type === "IdentifierExpression") {
       v = v.addStrictError(new ValidationError(node, "`delete` with unqualified identifier not allowed in strict mode"));
-    } else if ((node.operator === "++" || node.operator === "--") && node.operand.type === "IdentifierExpression" && isRestrictedWord(node.operand.identifier.name)) {
-      v = v.addStrictError(new ValidationError(node, "Restricted words must not be incremented/decremented in strict mode"));
+    } else if ((node.operator === "++" || node.operator === "--") && node.operand.type === "IdentifierExpression") {
+      v = v.checkRestricted(node.operand.identifier);
     }
     return v;
   }
@@ -271,11 +247,8 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceSetter(node, name, parameter, body) {
-    let v = super.reduceSetter(node, name, parameter, body);
-    if (isRestrictedWord(node.parameter.name)) {
-      v = v.addStrictError(new ValidationError(node, "SetterProperty parameter must not be a restricted name"));
-    }
-    return v;
+    return super.reduceSetter(node, name, parameter, body)
+      .checkRestricted(node.parameter);
   }
 
   reduceSwitchStatement(node, discriminant, cases) {
@@ -289,11 +262,8 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceVariableDeclarator(node, binding, init) {
-    let v = super.reduceVariableDeclarator(node, binding, init);
-    if (isRestrictedWord(node.binding.name)) {
-      v = v.addStrictError(new ValidationError(node, "VariableDeclarator must not be restricted name"));
-    }
-    return v;
+    return super.reduceVariableDeclarator(node, binding, init)
+      .checkRestricted(node.binding);
   }
 
   reduceWithStatement(node, object, body) {
