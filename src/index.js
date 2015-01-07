@@ -53,7 +53,7 @@ export class Validator extends MonoidalReducer {
   reduceBreakStatement(node, label) {
     let v = super.reduceBreakStatement(node, label);
     return node.label == null
-      ? v.addFreeBreakStatement(new ValidationError(node, "break must be nested within switch or iteration statement"))
+      ? v.addFreeBreakStatement(new ValidationError(node, "BreakStatement must be nested within switch or iteration statement"))
       : v.addFreeJumpTarget(node.label);
   }
 
@@ -64,7 +64,7 @@ export class Validator extends MonoidalReducer {
 
   reduceContinueStatement(node, body, label) {
     let v = super.reduceContinueStatement(node, body, label)
-      .addFreeContinueStatement(new ValidationError(node, "Continue statement must be inside a recursive loop"));
+      .addFreeContinueStatement(new ValidationError(node, "ContinueStatement must be inside an iteration statement"));
     return node.label == null ? v : v.addFreeJumpTarget(node.label);
   }
 
