@@ -17,7 +17,7 @@
 import * as Shift from "shift-ast"
 
 import {assertValid, validStmt, invalidStmt, validExpr, invalidExpr, wrapIter, exprStmt, label, prop, vars, varsStmt, FE, FD, BLOCK, BLOCK_STMT, STMT, EXPR, ID, NUM} from "./helpers"
-import isValid, {Validator} from "..";
+import isValid, {Validator} from "../";
 
 function strictFE(stmt) {
   return new Shift.FunctionExpression(null, [], new Shift.FunctionBody([new Shift.UseStrictDirective], [stmt]));

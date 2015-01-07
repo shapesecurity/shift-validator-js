@@ -33,6 +33,17 @@ export default function isValid(node) {
   return Validator.validate(node).length === 0;
 }
 
+function isIterationStatement(type) {
+  switch (type) {
+    case "DoWhileStatement":
+    case "WhileStatement":
+    case "ForStatement":
+    case "ForInStatement":
+      return true;
+  }
+  return false;
+}
+
 export class Validator extends MonoidalReducer {
   constructor() {
     super(ValidationContext);
@@ -54,7 +65,7 @@ export class Validator extends MonoidalReducer {
     let v = super.reduceBreakStatement(node, label);
     return node.label == null
       ? v.addFreeBreakStatement(new ValidationError(node, "BreakStatement must be nested within switch or iteration statement"))
-      : v.addFreeJumpTarget(node.label);
+      : v.addFreeBreakJumpTarget(node.label);
   }
 
   reduceCatchClause(node, param, body) {
@@ -65,7 +76,7 @@ export class Validator extends MonoidalReducer {
   reduceContinueStatement(node, body, label) {
     let v = super.reduceContinueStatement(node, body, label)
       .addFreeContinueStatement(new ValidationError(node, "ContinueStatement must be inside an iteration statement"));
-    return node.label == null ? v : v.addFreeJumpTarget(node.label);
+    return node.label == null ? v : v.addFreeContinueJumpTarget(node.label);
   }
 
   reduceDoWhileStatement(node, body, test) {
@@ -143,7 +154,10 @@ export class Validator extends MonoidalReducer {
     if (v.usedLabelNames.some(s => s === node.label.name)) {
       v = v.addError(new ValidationError(node, "Duplicate label name."));
     }
-    return v.observeLabelName(node.label);
+    if (isIterationStatement(node.body.type)) {
+        return v.observeIterationLabelName(node.label);
+    }
+    return v.observeNonIterationLabelName(node.label);
   }
 
   reduceLiteralNumericExpression(node) {
