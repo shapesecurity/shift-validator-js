@@ -81,15 +81,27 @@ export class ValidationContext {
     );
   }
 
-  observeLabelName(l) {
+  observeIterationLabelName(label) {
     return new ValidationContext(
       this.freeBreakStatements,
       this.freeContinueStatements,
-      this.usedLabelNames.concat([l.name]),
-      this.freeJumpTargets.filter(identifier => identifier.name !== l.name),
+      this.usedLabelNames.concat([label.name]),
+      this.freeJumpTargets.filter(info => info.name !== label.name),
       this.freeReturnStatements,
       this.errors,
       this.strictErrors
+    );
+  }
+
+  observeNonIterationLabelName(label) {
+    return new ValidationContext(
+        this.freeBreakStatements,
+        this.freeContinueStatements,
+        this.usedLabelNames.concat([label.name]),
+        this.freeJumpTargets.filter(info => info.name !== label.name || info.type !== 'break'),
+        this.freeReturnStatements,
+        this.errors,
+        this.strictErrors
     );
   }
 
@@ -105,17 +117,30 @@ export class ValidationContext {
     );
   }
 
-  addFreeJumpTarget(l) {
+  addFreeBreakJumpTarget(label) {
     return new ValidationContext(
       this.freeBreakStatements,
       this.freeContinueStatements,
       this.usedLabelNames,
-      this.freeJumpTargets.concat([l]),
+      this.freeJumpTargets.concat([{name: label.name, type: 'break'}]),
       this.freeReturnStatements,
       this.errors,
       this.strictErrors
     );
   }
+
+  addFreeContinueJumpTarget(label) {
+    return new ValidationContext(
+        this.freeBreakStatements,
+        this.freeContinueStatements,
+        this.usedLabelNames,
+        this.freeJumpTargets.concat([{name: label.name, type: 'continue'}]),
+        this.freeReturnStatements,
+        this.errors,
+        this.strictErrors
+    );
+  }
+
 
   addFreeReturnStatement(r) {
     return new ValidationContext(

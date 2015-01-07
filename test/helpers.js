@@ -17,11 +17,11 @@
 import * as assert from "assert";
 
 import * as Shift from "shift-ast";
-import isValid, {Validator} from "..";
+import isValid, {Validator} from "../";
 
 export function assertValid(errs) {
   if (errs.length > 0) {
-    errs.forEach((err) => console.error(err.message, err.node.toJSON()));
+    errs.forEach((err) => console.error(err.message, JSON.toString(err.node)));
   }
   assert.equal(0, errs.length);
 }
@@ -36,6 +36,9 @@ export function invalidStmt(numExpectedErrors, stmt) {
   let script = wrapScript(stmt);
   assert(!isValid(script));
   let errs = Validator.validate(script);
+  if (errs.length != numExpectedErrors) {
+    errs.forEach((err) => console.error(err.message, JSON.toString(err.node)));
+  }
   assert.notEqual(errs.length, 0, "statement should have errors");
   assert.equal(errs.length, numExpectedErrors);
 }
@@ -78,6 +81,10 @@ export function prop(x) {
       value = x.name;
   }
   return new Shift.PropertyName(kind, value);
+}
+
+export function block(stmt) {
+  return new Shift.BlockStatement(new Shift.Block([stmt]));
 }
 
 export function FE(stmt) {
