@@ -250,6 +250,23 @@ export class Validator extends MonoidalReducer {
     return v;
   }
 
+  reducePropertyName(node) {
+    let v = super.reducePropertyName(node);
+    switch (node.kind) {
+      case "identifier":
+        if (!isIdentifierName(node.value)) {
+          v = v.addError(new ValidationError(node, "PropertyName with identifier kind must have IdentifierName value"));
+        }
+        break;
+      case "number":
+        if (!/^(?:0|[1-9]\d*\.?\d*)$/.test(node.value)) {
+          v = v.addError(new ValidationError(node, "PropertyName with number kind must have numeric value"));
+        }
+        break;
+    }
+    return v;
+  }
+
   reduceReturnStatement(node, expression) {
     return super.reduceReturnStatement(node, expression)
       .addFreeReturnStatement(new ValidationError(node, "Return statement must be inside of a function"));

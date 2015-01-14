@@ -228,6 +228,24 @@ suite("unit", () => {
     );
   });
 
+  test("PropertyName kind must not conflict with its value", () => {
+    validExpr(new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("identifier", "a"), EXPR)]));
+    validExpr(new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("string", " "), EXPR)]));
+    validExpr(new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("number", "3.1"), EXPR)]));
+    validExpr(new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("number", "9999999999999999999999999999999999999999"), EXPR)]));
+    invalidExpr(1, new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("identifier", " "), EXPR)]));
+    invalidExpr(1, new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("identifier", "0"), EXPR)]));
+    invalidExpr(1, new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("number", "a"), EXPR)]));
+    invalidExpr(1, new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("number", "NaN"), EXPR)]));
+    invalidExpr(1, new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("number", "Infinity"), EXPR)]));
+    invalidExpr(1, new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("number", "-1"), EXPR)]));
+    invalidExpr(1, new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("number", "0x0"), EXPR)]));
+    invalidExpr(1, new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("number", "0X0"), EXPR)]));
+    invalidExpr(1, new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("number", "01"), EXPR)]));
+    invalidExpr(1, new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("number", "0b1"), EXPR)]));
+    invalidExpr(1, new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("number", "0o1"), EXPR)]));
+  });
+
   test("ReturnStatement must be nested within a FunctionExpression or FunctionDeclaration node", () => {
     validExpr(FE(new Shift.ReturnStatement));
     validStmt(FD(new Shift.ReturnStatement));
