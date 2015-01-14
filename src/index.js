@@ -44,6 +44,41 @@ function isIterationStatement(type) {
   return false;
 }
 
+function trailingStatement(node) {
+  switch (node.type) {
+  case "IfStatement":
+    if (node.alternate != null) {
+      return node.alternate;
+    }
+    return node.consequent;
+
+  case "LabeledStatement":
+  case "ForStatement":
+  case "ForInStatement":
+  case "WhileStatement":
+  case "WithStatement":
+    return node.body;
+  }
+  return null;
+}
+
+function isProblematicIfStatement(node) {
+  if (node.type !== "IfStatement") {
+    return false;
+  }
+  if (node.alternate == null) {
+    return false;
+  }
+  let current = node.consequent;
+  do {
+    if (current.type === "IfStatement" && current.alternate == null) {
+      return true;
+    }
+    current = trailingStatement(current);
+  } while(current != null);
+  return false;
+}
+
 export class Validator extends MonoidalReducer {
   constructor() {
     super(ValidationContext);
@@ -147,6 +182,14 @@ export class Validator extends MonoidalReducer {
   reduceIdentifierExpression(node, identifier) {
     return super.reduceIdentifierExpression(node, identifier)
       .checkReserved(node.identifier);
+  }
+
+  reduceIfStatement(node, test, consequent, alternate) {
+    let v = super.reduceIfStatement(node, test, consequent, alternate);
+    if (isProblematicIfStatement(node)) {
+      v = v.addError(new ValidationError(node, "IfStatement with null `alternate` must not be the `consequent` of an IfStatement with a non-null `alternate`"));
+    }
+    return v;
   }
 
   reduceLabeledStatement(node, label, body) {
