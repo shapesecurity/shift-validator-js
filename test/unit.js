@@ -154,6 +154,20 @@ suite("unit", () => {
     invalidStmt(1, new Shift.FunctionDeclaration(ID, [new Shift.Identifier("if"), ID], new Shift.FunctionBody([], [])));
   });
 
+  test("IfStatement with null `alternate` must not be the `consequent` of an IfStatement with a non-null `alternate`", () => {
+    validStmt(new Shift.IfStatement(EXPR, new Shift.DoWhileStatement(new Shift.IfStatement(EXPR, STMT, null), EXPR), STMT));
+    validStmt(new Shift.IfStatement(EXPR, new Shift.IfStatement(EXPR, STMT, STMT), STMT));
+    validStmt(new Shift.IfStatement(EXPR, new Shift.IfStatement(EXPR, STMT, null), null));
+    invalidStmt(1, new Shift.IfStatement(EXPR, new Shift.IfStatement(EXPR, STMT, null), STMT));
+    invalidStmt(1, new Shift.IfStatement(EXPR, new Shift.IfStatement(EXPR, STMT, new Shift.IfStatement(EXPR, STMT, null)), STMT));
+    invalidStmt(1, new Shift.IfStatement(EXPR, new Shift.IfStatement(EXPR, new Shift.IfStatement(EXPR, STMT, null), null), STMT));
+    invalidStmt(1, new Shift.IfStatement(EXPR, new Shift.LabeledStatement(ID, new Shift.IfStatement(EXPR, STMT, null)), STMT));
+    invalidStmt(1, new Shift.IfStatement(EXPR, new Shift.WhileStatement(EXPR, new Shift.IfStatement(EXPR, STMT, null)), STMT));
+    invalidStmt(1, new Shift.IfStatement(EXPR, new Shift.WithStatement(EXPR, new Shift.IfStatement(EXPR, STMT, null)), STMT));
+    invalidStmt(1, new Shift.IfStatement(EXPR, new Shift.ForStatement(EXPR, EXPR, EXPR, new Shift.IfStatement(EXPR, STMT, null)), STMT));
+    invalidStmt(1, new Shift.IfStatement(EXPR, new Shift.ForInStatement(EXPR, EXPR, new Shift.IfStatement(EXPR, STMT, null)), STMT));
+  });
+
   test("Setter parameter must not be a reserved word", () => {
     validExpr(new Shift.ObjectExpression([new Shift.Setter(prop(ID), ID, new Shift.FunctionBody([], []))]));
     invalidExpr(1, new Shift.ObjectExpression([new Shift.Setter(prop(ID), new Shift.Identifier("if"), new Shift.FunctionBody([], []))]));
