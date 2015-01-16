@@ -181,7 +181,7 @@ suite("unit", () => {
   });
 
   test("LiteralNumericExpression nodes must not be NaN", () => {
-    invalidExpr(1, new Shift.LiteralNumericExpression(global.NaN));
+    invalidExpr(1, new Shift.LiteralNumericExpression(0/0));
   });
 
   test("LiteralNumericExpression nodes must be non-negative", () => {
