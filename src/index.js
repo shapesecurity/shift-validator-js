@@ -143,9 +143,9 @@ export class Validator extends MonoidalReducer {
     }
     const isStrict = node.directives.some(directive => directive.type === "UseStrictDirective");
     if (isStrict) {
-      v = v.addErrors(v.strictErrors);
+      v = v.enforceStrictErrors();
     }
-    return v.addErrors(v.freeBreakStatements).addErrors(v.freeContinueStatements);
+    return v.enforceFreeBreakAndContinueStatementErrors();
   }
 
   reduceFunctionDeclaration(node, name, parameters, functionBody) {
@@ -322,7 +322,7 @@ export class Validator extends MonoidalReducer {
 
   reduceScript(node, body) {
     return super.reduceScript(node, body)
-      .addErrors(body.freeReturnStatements);
+      .enforceFreeReturnStatementErrors();
   }
 
   reduceSetter(node, name, parameter, body) {
