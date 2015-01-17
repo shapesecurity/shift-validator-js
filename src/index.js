@@ -171,6 +171,11 @@ export class Validator extends MonoidalReducer {
     return node.parameters.reduce((v1, param) => v1.checkRestricted(param), v);
   }
 
+  reduceGetter(node, name, body) {
+    return super.reduceGetter(node, name, body)
+      .clearFreeReturnStatements();
+  }
+
   reduceIdentifier(node) {
     let v = this.identity;
     if (!isIdentifierName(node.name)) {
@@ -322,6 +327,7 @@ export class Validator extends MonoidalReducer {
 
   reduceSetter(node, name, parameter, body) {
     return super.reduceSetter(node, name, parameter, body)
+      .clearFreeReturnStatements()
       .checkRestricted(node.parameter);
   }
 

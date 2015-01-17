@@ -23,7 +23,7 @@
   "devDependencies": {
     "6to5": "^1.14.14",
     "mocha": "^2.0.1",
-    "shift-ast": "^1.0.0"
+    "shift-ast": "^1.0.3"
   },
   "keywords": [
     "Shift",
