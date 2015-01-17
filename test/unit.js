@@ -260,9 +260,11 @@ suite("unit", () => {
     invalidExpr(1, new Shift.ObjectExpression([new Shift.DataProperty(new Shift.PropertyName("number", "0o1"), EXPR)]));
   });
 
-  test("ReturnStatement must be nested within a FunctionExpression or FunctionDeclaration node", () => {
+  test("ReturnStatement must be nested within a FunctionExpression or FunctionDeclaration or Getter or Setter node", () => {
     validExpr(FE(new Shift.ReturnStatement));
     validStmt(FD(new Shift.ReturnStatement));
+    validExpr(new Shift.ObjectExpression([new Shift.Getter(new Shift.PropertyName("identifier", ID.name), new Shift.FunctionBody([], [new Shift.ReturnStatement]))]));
+    validExpr(new Shift.ObjectExpression([new Shift.Setter(new Shift.PropertyName("identifier", ID.name), ID, new Shift.FunctionBody([], [new Shift.ReturnStatement]))]));
     invalidStmt(1, new Shift.ReturnStatement);
   });
 
