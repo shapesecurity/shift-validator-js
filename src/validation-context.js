@@ -196,15 +196,39 @@ export class ValidationContext {
     );
   }
 
-  addErrors(errors) {
+  enforceFreeBreakAndContinueStatementErrors() {
+    return new ValidationContext(
+      [],
+      [],
+      this.usedLabelNames,
+      this.freeJumpTargets,
+      this.freeReturnStatements,
+      this.errors.concat(this.freeBreakStatements).concat(this.freeContinueStatements),
+      this.strictErrors
+    );
+  }
+
+  enforceFreeReturnStatementErrors() {
+    return new ValidationContext(
+      this.freeBreakStatements,
+      this.freeContinueStatements,
+      this.usedLabelNames,
+      this.freeJumpTargets,
+      [],
+      this.errors.concat(this.freeReturnStatements),
+      this.strictErrors
+    );
+  }
+
+  enforceStrictErrors() {
     return new ValidationContext(
       this.freeBreakStatements,
       this.freeContinueStatements,
       this.usedLabelNames,
       this.freeJumpTargets,
       this.freeReturnStatements,
-      this.errors.concat(errors),
-      this.strictErrors
+      this.errors.concat(this.strictErrors),
+      []
     );
   }
 
