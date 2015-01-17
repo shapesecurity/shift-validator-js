@@ -235,6 +235,7 @@ suite("strict mode", () => {
   test("WithStatement not allowed", () => {
     validStmt(new Shift.WithStatement(EXPR, STMT));
     invalidExpr(1, strictFE(new Shift.WithStatement(EXPR, STMT)));
+    invalidExpr(1, strictFE(strictFE(new Shift.WithStatement(EXPR, STMT))));
   });
 
 });
