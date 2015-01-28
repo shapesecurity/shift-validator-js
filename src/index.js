@@ -89,7 +89,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceAssignmentExpression(node, binding, expression) {
-    let v = super(node, binding, expression);
+    let v = super.reduceAssignmentExpression(node, binding, expression);
     if (node.binding.type === "IdentifierExpression") {
       v = v.checkRestricted(node.binding.identifier);
     }
@@ -97,31 +97,31 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceBreakStatement(node, label) {
-    let v = super(node, label);
+    let v = super.reduceBreakStatement(node, label);
     return node.label == null
       ? v.addFreeBreakStatement(new ValidationError(node, "BreakStatement must be nested within switch or iteration statement"))
       : v.addFreeBreakJumpTarget(node.label);
   }
 
   reduceCatchClause(node, param, body) {
-    return super(node, param, body)
+    return super.reduceCatchClause(node, param, body)
       .checkRestricted(node.binding);
   }
 
   reduceContinueStatement(node, body, label) {
-    let v = super(node, body, label)
+    let v = super.reduceContinueStatement(node, body, label)
       .addFreeContinueStatement(new ValidationError(node, "ContinueStatement must be inside an iteration statement"));
     return node.label == null ? v : v.addFreeContinueJumpTarget(node.label);
   }
 
   reduceDoWhileStatement(node, body, test) {
-    return super(node, body, test)
+    return super.reduceDoWhileStatement(node, body, test)
       .clearFreeContinueStatements()
       .clearFreeBreakStatements();
   }
 
   reduceForInStatement(node, left, right, body) {
-    let v = super(node, left, right, body)
+    let v = super.reduceForInStatement(node, left, right, body)
       .clearFreeBreakStatements()
       .clearFreeContinueStatements();
     if (node.left.type === "VariableDeclaration" && node.left.declarators.length > 1) {
@@ -131,13 +131,13 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceForStatement(node, init, test, update, body) {
-    return super(node, init, test, update, body)
+    return super.reduceForStatement(node, init, test, update, body)
       .clearFreeBreakStatements()
       .clearFreeContinueStatements();
   }
 
   reduceFunctionBody(node, directives, sourceElements) {
-    let v = super(node, directives, sourceElements);
+    let v = super.reduceFunctionBody(node, directives, sourceElements);
     if (v.freeJumpTargets.length > 0) {
       v = v.freeJumpTargets.reduce((v1, ident) => v1.addError(new ValidationError(ident, "Unbound break/continue label")), v);
     }
@@ -149,7 +149,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceFunctionDeclaration(node, name, parameters, functionBody) {
-    let v = super(node, name, parameters, functionBody)
+    let v = super.reduceFunctionDeclaration(node, name, parameters, functionBody)
       .clearUsedLabelNames()
       .clearFreeReturnStatements()
       .checkRestricted(node.name);
@@ -160,7 +160,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceFunctionExpression(node, name, parameters, functionBody) {
-    let v = super(node, name, parameters, functionBody)
+    let v = super.reduceFunctionExpression(node, name, parameters, functionBody)
       .clearFreeReturnStatements();
     if (node.name != null) {
       v = v.checkRestricted(node.name);
@@ -172,7 +172,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceGetter(node, name, body) {
-    return super(node, name, body)
+    return super.reduceGetter(node, name, body)
       .clearFreeReturnStatements();
   }
 
@@ -185,12 +185,12 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceIdentifierExpression(node, identifier) {
-    return super(node, identifier)
+    return super.reduceIdentifierExpression(node, identifier)
       .checkReserved(node.identifier);
   }
 
   reduceIfStatement(node, test, consequent, alternate) {
-    let v = super(node, test, consequent, alternate);
+    let v = super.reduceIfStatement(node, test, consequent, alternate);
     if (isProblematicIfStatement(node)) {
       v = v.addError(new ValidationError(node, "IfStatement with null `alternate` must not be the `consequent` of an IfStatement with a non-null `alternate`"));
     }
@@ -198,7 +198,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceLabeledStatement(node, label, body) {
-    let v = super(node, label, body);
+    let v = super.reduceLabeledStatement(node, label, body);
     if (v.usedLabelNames.some(s => s === node.label.name)) {
       v = v.addError(new ValidationError(node, "Duplicate label name."));
     }
@@ -238,7 +238,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceObjectExpression(node, properties) {
-    let v = super(node, properties);
+    let v = super.reduceObjectExpression(node, properties);
     const setKeys = Object.create(null);
     const getKeys = Object.create(null);
     const dataKeys = Object.create(null);
@@ -281,7 +281,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reducePostfixExpression(node, operand) {
-    let v = super(node, operand);
+    let v = super.reducePostfixExpression(node, operand);
     if ((node.operator === "++" || node.operator === "--") && node.operand.type === "IdentifierExpression") {
       v = v.checkRestricted(node.operand.identifier);
     }
@@ -289,7 +289,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reducePrefixExpression(node, operand) {
-    let v = super(node, operand);
+    let v = super.reducePrefixExpression(node, operand);
     if (node.operator === "delete" && node.operand.type === "IdentifierExpression") {
       v = v.addStrictError(new ValidationError(node, "`delete` with unqualified identifier not allowed in strict mode"));
     } else if ((node.operator === "++" || node.operator === "--") && node.operand.type === "IdentifierExpression") {
@@ -299,7 +299,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reducePropertyName(node) {
-    let v = super(node);
+    let v = super.reducePropertyName(node);
     switch (node.kind) {
       case "identifier":
         if (!isIdentifierName(node.value)) {
@@ -316,43 +316,43 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceReturnStatement(node, expression) {
-    return super(node, expression)
+    return super.reduceReturnStatement(node, expression)
       .addFreeReturnStatement(new ValidationError(node, "Return statement must be inside of a function"));
   }
 
   reduceScript(node, body) {
-    return super(node, body)
+    return super.reduceScript(node, body)
       .enforceFreeReturnStatementErrors();
   }
 
   reduceSetter(node, name, parameter, body) {
-    return super(node, name, parameter, body)
+    return super.reduceSetter(node, name, parameter, body)
       .clearFreeReturnStatements()
       .checkRestricted(node.parameter);
   }
 
   reduceSwitchStatement(node, discriminant, cases) {
-    return super(node, discriminant, cases)
+    return super.reduceSwitchStatement(node, discriminant, cases)
       .clearFreeBreakStatements();
   }
 
   reduceSwitchStatementWithDefault(node, discriminant, preDefaultCases, defaultCase, postDefaultCases) {
-    return super(node, discriminant, preDefaultCases, defaultCase, postDefaultCases)
+    return super.reduceSwitchStatementWithDefault(node, discriminant, preDefaultCases, defaultCase, postDefaultCases)
       .clearFreeBreakStatements();
   }
 
   reduceVariableDeclarator(node, binding, init) {
-    return super(node, binding, init)
+    return super.reduceVariableDeclarator(node, binding, init)
       .checkRestricted(node.binding);
   }
 
   reduceWithStatement(node, object, body) {
-    return super(node, object, body)
+    return super.reduceWithStatement(node, object, body)
       .addStrictError(new ValidationError(node, "WithStatement not allowed in strict mode"));
   }
 
   reduceWhileStatement(node, test, body) {
-    return super(node, test, body)
+    return super.reduceWhileStatement(node, test, body)
       .clearFreeBreakStatements()
       .clearFreeContinueStatements();
   }
