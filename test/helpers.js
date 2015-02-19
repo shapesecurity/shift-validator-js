@@ -57,6 +57,20 @@ export function invalidExpr(numExpectedErrors, expr) {
   assert.equal(errs.length, numExpectedErrors);
 }
 
+export function validDirective(directive) {
+  let script = new Shift.Script(new Shift.FunctionBody([directive], []));
+  assert(isValid(script));
+  assertValid(Validator.validate(script));
+}
+
+export function invalidDirective(numExpectedErrors, directive) {
+  let script = new Shift.Script(new Shift.FunctionBody([directive], []));
+  assert(!isValid(script));
+  let errs = Validator.validate(script);
+  assert.notEqual(errs.length, 0, "directive should have errors");
+  assert.equal(errs.length, numExpectedErrors);
+}
+
 export function exprStmt(expr) {
   return new Shift.ExpressionStatement(expr);
 }

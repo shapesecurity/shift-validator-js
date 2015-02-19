@@ -16,7 +16,7 @@
 
 import * as Shift from "shift-ast"
 
-import {validStmt, invalidStmt, validExpr, invalidExpr, wrapIter, exprStmt, label, prop, vars, block, FE, FD, STMT, EXPR, ID} from "./helpers"
+import {validStmt, invalidStmt, validExpr, invalidExpr, validDirective, invalidDirective, wrapIter, exprStmt, label, prop, vars, block, FE, FD, STMT, EXPR, ID} from "./helpers"
 
 suite("unit", () => {
   test("BreakStatement with label must be within a correspondingly labeled statement", () => {
@@ -266,6 +266,22 @@ suite("unit", () => {
     validExpr(new Shift.ObjectExpression([new Shift.Getter(new Shift.PropertyName("identifier", ID.name), new Shift.FunctionBody([], [new Shift.ReturnStatement]))]));
     validExpr(new Shift.ObjectExpression([new Shift.Setter(new Shift.PropertyName("identifier", ID.name), ID, new Shift.FunctionBody([], [new Shift.ReturnStatement]))]));
     invalidStmt(1, new Shift.ReturnStatement);
+  });
+
+  test("UnknownDirective value must be representable as a single- or double-quoted string", () => {
+    validDirective(new Shift.UseStrictDirective);
+    validDirective(new Shift.UnknownDirective(""));
+    validDirective(new Shift.UnknownDirective("\""));
+    validDirective(new Shift.UnknownDirective("'"));
+    validDirective(new Shift.UnknownDirective("'\\\""));
+    validDirective(new Shift.UnknownDirective("\\n"));
+    validDirective(new Shift.UnknownDirective("\\\n"));
+    validDirective(new Shift.UnknownDirective("\\\r\n"));
+    validDirective(new Shift.UnknownDirective("\\\r"));
+    validDirective(new Shift.UnknownDirective("\\\u2028"));
+    validDirective(new Shift.UnknownDirective("\\\u2029"));
+    invalidDirective(1, new Shift.UnknownDirective("'\""));
+    invalidDirective(1, new Shift.UnknownDirective("\n"));
   });
 
   test("VariableDeclarationStatement in ForInStatement can only have one VariableDeclarator", () => {
