@@ -272,4 +272,27 @@ suite("unit", () => {
     validStmt(new Shift.ForInStatement(vars("var", "a"), EXPR, STMT));
     invalidStmt(1, new Shift.ForInStatement(vars("var", "a", "b"), EXPR, STMT));
   });
+
+  test("VariableDeclarators in const VariableDeclarations must have an initialiser", () => {
+    validStmt(new Shift.VariableDeclarationStatement(new Shift.VariableDeclaration("const", [
+      new Shift.VariableDeclarator(new Shift.Identifier("a"), new Shift.LiteralNullExpression),
+    ])));
+    validStmt(new Shift.VariableDeclarationStatement(new Shift.VariableDeclaration("let", [
+      new Shift.VariableDeclarator(new Shift.Identifier("a"), null),
+    ])));
+    validStmt(new Shift.VariableDeclarationStatement(new Shift.VariableDeclaration("var", [
+      new Shift.VariableDeclarator(new Shift.Identifier("a"), null),
+    ])));
+    invalidStmt(1, new Shift.VariableDeclarationStatement(new Shift.VariableDeclaration("const", [
+      new Shift.VariableDeclarator(new Shift.Identifier("a"), null),
+    ])));
+    invalidStmt(1, new Shift.VariableDeclarationStatement(new Shift.VariableDeclaration("const", [
+      new Shift.VariableDeclarator(new Shift.Identifier("a"), new Shift.LiteralNullExpression),
+      new Shift.VariableDeclarator(new Shift.Identifier("b"), null),
+    ])));
+    invalidStmt(2, new Shift.VariableDeclarationStatement(new Shift.VariableDeclaration("const", [
+      new Shift.VariableDeclarator(new Shift.Identifier("a"), null),
+      new Shift.VariableDeclarator(new Shift.Identifier("b"), null),
+    ])));
+  });
 });

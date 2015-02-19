@@ -342,8 +342,20 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceVariableDeclarator(node, binding, init) {
-    return super.reduceVariableDeclarator(node, binding, init)
+    let v = super.reduceVariableDeclarator(node, binding, init)
       .checkRestricted(node.binding);
+    if (node.init == null) {
+      v = v.addUninitialisedDeclarator(new ValidationError(node, "Constant declarations must be initialised"));
+    }
+    return v;
+  }
+
+  reduceVariableDeclarationStatement(node, declaration) {
+    let v = super.reduceVariableDeclarationStatement(node, declaration);
+    if (node.declaration.kind === "const") {
+      v = v.enforceUninitialisedDeclarators();
+    }
+    return v;
   }
 
   reduceWithStatement(node, object, body) {
