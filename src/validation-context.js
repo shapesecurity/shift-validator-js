@@ -19,18 +19,19 @@ const {isRestrictedWord, isReservedWordES5} = keyword;
 
 export class ValidationContext {
 
-  constructor(freeBreakStatements, freeContinueStatements, usedLabelNames, freeJumpTargets, freeReturnStatements, errors, strictErrors) {
+  constructor(freeBreakStatements, freeContinueStatements, usedLabelNames, freeJumpTargets, freeReturnStatements, uninitialisedDeclarators, errors, strictErrors) {
     this.freeBreakStatements = freeBreakStatements;
     this.freeContinueStatements = freeContinueStatements;
     this.usedLabelNames = usedLabelNames;
     this.freeJumpTargets = freeJumpTargets;
     this.freeReturnStatements = freeReturnStatements;
+    this.uninitialisedDeclarators = uninitialisedDeclarators,
     this.errors = errors;
     this.strictErrors = strictErrors;
   }
 
   static empty() {
-    return new ValidationContext([],[],[],[],[],[],[]);
+    return new ValidationContext([],[],[],[],[],[],[],[]);
   }
 
   addFreeBreakStatement(s) {
@@ -40,6 +41,7 @@ export class ValidationContext {
       this.usedLabelNames,
       this.freeJumpTargets,
       this.freeReturnStatements,
+      this.uninitialisedDeclarators,
       this.errors,
       this.strictErrors
     );
@@ -52,6 +54,7 @@ export class ValidationContext {
       this.usedLabelNames,
       this.freeJumpTargets,
       this.freeReturnStatements,
+      this.uninitialisedDeclarators,
       this.errors,
       this.strictErrors
     );
@@ -64,6 +67,7 @@ export class ValidationContext {
       this.usedLabelNames,
       this.freeJumpTargets,
       this.freeReturnStatements,
+      this.uninitialisedDeclarators,
       this.errors,
       this.strictErrors
     );
@@ -76,6 +80,7 @@ export class ValidationContext {
       this.usedLabelNames,
       this.freeJumpTargets,
       this.freeReturnStatements,
+      this.uninitialisedDeclarators,
       this.errors,
       this.strictErrors
     );
@@ -88,6 +93,7 @@ export class ValidationContext {
       this.usedLabelNames.concat([label.name]),
       this.freeJumpTargets.filter(info => info.name !== label.name),
       this.freeReturnStatements,
+      this.uninitialisedDeclarators,
       this.errors,
       this.strictErrors
     );
@@ -95,13 +101,14 @@ export class ValidationContext {
 
   observeNonIterationLabelName(label) {
     return new ValidationContext(
-        this.freeBreakStatements,
-        this.freeContinueStatements,
-        this.usedLabelNames.concat([label.name]),
-        this.freeJumpTargets.filter(info => info.name !== label.name || info.type !== 'break'),
-        this.freeReturnStatements,
-        this.errors,
-        this.strictErrors
+      this.freeBreakStatements,
+      this.freeContinueStatements,
+      this.usedLabelNames.concat([label.name]),
+      this.freeJumpTargets.filter(info => info.name !== label.name || info.type !== 'break'),
+      this.freeReturnStatements,
+      this.uninitialisedDeclarators,
+      this.errors,
+      this.strictErrors
     );
   }
 
@@ -112,6 +119,7 @@ export class ValidationContext {
       [],
       this.freeJumpTargets,
       this.freeReturnStatements,
+      this.uninitialisedDeclarators,
       this.errors,
       this.strictErrors
     );
@@ -124,6 +132,7 @@ export class ValidationContext {
       this.usedLabelNames,
       this.freeJumpTargets.concat([{name: label.name, type: 'break'}]),
       this.freeReturnStatements,
+      this.uninitialisedDeclarators,
       this.errors,
       this.strictErrors
     );
@@ -131,13 +140,14 @@ export class ValidationContext {
 
   addFreeContinueJumpTarget(label) {
     return new ValidationContext(
-        this.freeBreakStatements,
-        this.freeContinueStatements,
-        this.usedLabelNames,
-        this.freeJumpTargets.concat([{name: label.name, type: 'continue'}]),
-        this.freeReturnStatements,
-        this.errors,
-        this.strictErrors
+      this.freeBreakStatements,
+      this.freeContinueStatements,
+      this.usedLabelNames,
+      this.freeJumpTargets.concat([{name: label.name, type: 'continue'}]),
+      this.freeReturnStatements,
+      this.uninitialisedDeclarators,
+      this.errors,
+      this.strictErrors
     );
   }
 
@@ -149,6 +159,7 @@ export class ValidationContext {
       this.usedLabelNames,
       this.freeJumpTargets,
       this.freeReturnStatements.concat([r]),
+      this.uninitialisedDeclarators,
       this.errors,
       this.strictErrors
     );
@@ -161,6 +172,7 @@ export class ValidationContext {
       this.usedLabelNames,
       this.freeJumpTargets,
       [],
+      this.uninitialisedDeclarators,
       this.errors,
       this.strictErrors
     );
@@ -191,6 +203,7 @@ export class ValidationContext {
       this.usedLabelNames,
       this.freeJumpTargets,
       this.freeReturnStatements,
+      this.uninitialisedDeclarators,
       this.errors.concat([e]),
       this.strictErrors
     );
@@ -203,6 +216,7 @@ export class ValidationContext {
       this.usedLabelNames,
       this.freeJumpTargets,
       this.freeReturnStatements,
+      this.uninitialisedDeclarators,
       this.errors.concat(this.freeBreakStatements).concat(this.freeContinueStatements),
       this.strictErrors
     );
@@ -215,7 +229,34 @@ export class ValidationContext {
       this.usedLabelNames,
       this.freeJumpTargets,
       [],
+      this.uninitialisedDeclarators,
       this.errors.concat(this.freeReturnStatements),
+      this.strictErrors
+    );
+  }
+
+  addUninitialisedDeclarator(node) {
+    return new ValidationContext(
+      this.freeBreakStatements,
+      this.freeContinueStatements,
+      this.usedLabelNames,
+      this.freeJumpTargets,
+      this.freeReturnStatements,
+      this.uninitialisedDeclarators.concat(node),
+      this.errors,
+      this.strictErrors
+    );
+  }
+
+  enforceUninitialisedDeclarators() {
+    return new ValidationContext(
+      this.freeBreakStatements,
+      this.freeContinueStatements,
+      this.usedLabelNames,
+      this.freeJumpTargets,
+      this.freeReturnStatements,
+      [],
+      this.errors.concat(this.uninitialisedDeclarators),
       this.strictErrors
     );
   }
@@ -227,6 +268,7 @@ export class ValidationContext {
       this.usedLabelNames,
       this.freeJumpTargets,
       this.freeReturnStatements,
+      this.uninitialisedDeclarators,
       this.errors.concat(this.strictErrors),
       []
     );
@@ -239,6 +281,7 @@ export class ValidationContext {
       this.usedLabelNames,
       this.freeJumpTargets,
       this.freeReturnStatements,
+      this.uninitialisedDeclarators,
       this.errors,
       this.strictErrors.concat([e])
     );
@@ -251,6 +294,7 @@ export class ValidationContext {
       this.usedLabelNames.concat(v.usedLabelNames),
       this.freeJumpTargets.concat(v.freeJumpTargets),
       this.freeReturnStatements.concat(v.freeReturnStatements),
+      this.uninitialisedDeclarators.concat(v.uninitialisedDeclarators),
       this.errors.concat(v.errors),
       this.strictErrors.concat(v.strictErrors)
     );
