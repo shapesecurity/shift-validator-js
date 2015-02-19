@@ -341,6 +341,16 @@ export class Validator extends MonoidalReducer {
       .clearFreeBreakStatements();
   }
 
+  reduceUnknownDirective(node) {
+    let v = super.reduceUnknownDirective(node);
+    try { (0, eval)(`"${node.value}"`); } catch(e0) {
+      try { (0, eval)(`'${node.value}'`); } catch(e1) {
+        v = v.addError(new ValidationError(node, "UseStrictDirective value must be representable as a single- or double-quoted string"));
+      }
+    }
+    return v;
+  }
+
   reduceVariableDeclarator(node, binding, init) {
     return super.reduceVariableDeclarator(node, binding, init)
       .checkRestricted(node.binding);
