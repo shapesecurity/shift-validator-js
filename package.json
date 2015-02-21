@@ -13,15 +13,15 @@
     "dist"
   ],
   "scripts": {
-    "test": "mocha --compilers js:6to5/lib/6to5/register --inline-diffs --check-leaks --ui tdd --reporter dot test",
-    "build": "6to5 --source-maps-inline --out-dir dist src"
+    "test": "mocha --compilers js:./babel-register --inline-diffs --check-leaks --ui tdd --reporter dot test",
+    "build": "babel --modules commonStrict --source-maps-inline --out-dir dist src"
   },
   "dependencies": {
     "esutils": "^1.1.6",
     "shift-reducer": "^1.0.3"
   },
   "devDependencies": {
-    "6to5": "^1.14.14",
+    "babel": "4.3.0",
     "everything.js": "0.0.4",
     "mocha": "^2.0.1",
     "shift-ast": "^1.0.3",
