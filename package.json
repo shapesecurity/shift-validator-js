@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "esutils": "^1.1.6",
+    "object-assign": "^2.0.0",
     "shift-reducer": "^1.0.3"
   },
   "devDependencies": {
