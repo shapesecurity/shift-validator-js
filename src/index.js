@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Shape Security, Inc.
+ * Copyright 2016 Shape Security, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
+import {Tokenizer, TokenType} from "shift-parser";
 import reduce, {MonoidalReducer} from "shift-reducer";
-import {keyword} from "esutils";
-const {isIdentifierName} = keyword;
+import {keyword, code} from "esutils";
+const {isIdentifierNameES6, isReservedWordES6} = keyword;
+const {isIdentifierStartES6: isIdentifierStart, isIdentifierPartES6: isIdentifierPart} = code;
 
 import {ValidationContext, ValidationError} from "./validation-context";
-
-function uniqueIdentifiers(identifiers) {
-  let set = Object.create(null);
-  return identifiers.every((identifier) => {
-    if (set[identifier.name]) return false;
-    set[identifier.name] = true;
-    return true;
-  });
-}
+import ValidationErrorMessages from "./validation-errors";
 
 export default function isValid(node) {
   return Validator.validate(node).length === 0;
@@ -51,10 +45,10 @@ function trailingStatement(node) {
       return node.alternate;
     }
     return node.consequent;
-
   case "LabeledStatement":
   case "ForStatement":
   case "ForInStatement":
+  case "ForOfStatement":
   case "WhileStatement":
   case "WithStatement":
     return node.body;
@@ -79,6 +73,63 @@ function isProblematicIfStatement(node) {
   return false;
 }
 
+function isValidIdentifierName(name) {
+  return name === 'let' || name == 'yield' || isIdentifierNameES6(name) && !isReservedWordES6(name);
+  //return name.length > 0 && isIdentifierStart(name.charCodeAt(0)) && Array.prototype.every.call(name, c => isIdentifierPart(c.charCodeAt(0)));
+  if (name.length === 0) {
+    return false;
+  }
+  try {
+    let res = (new Tokenizer(name)).scanIdentifier();
+    return (res.type === TokenType.IDENTIFIER || res.type === TokenType.LET || res.type === TokenType.YIELD) && res.value === name;
+  } catch(e) {
+    return false;
+  }
+}
+
+function isValidStaticPropertyName(name) {
+  return isIdentifierNameES6(name);
+}
+
+function isValidRegex(pattern, flags) {
+  return true; // TODO fix this when pattern-acceptor is fixed
+}
+
+function isMemberExpression(binding) {
+  return binding.type == 'ComputedMemberExpression' || binding.type == 'StaticMemberExpression';
+}
+
+function isTemplateElement(rawValue) {
+  try {
+    let tokenizer = new Tokenizer('`' + rawValue + '`');
+    tokenizer.lookahead = tokenizer.advance();
+    let token = tokenizer.lex();
+    if(token.type !== TokenType.TEMPLATE) {
+      return false;
+    }
+    return tokenizer.eof();
+  } catch(e) {
+    return false;
+  }
+}
+
+function isDirective(rawValue) {
+  let stringify = c => {
+    try {
+      let tokenizer = new Tokenizer(c + rawValue + c);
+      tokenizer.lookahead = tokenizer.advance();
+      let token = tokenizer.lex();
+      if(token.type !== TokenType.STRING) {
+        return false;
+      }
+      return tokenizer.eof();
+    } catch(e) {
+      return false;
+    }
+  }
+  return stringify('"') || stringify("'");
+}
+
 export class Validator extends MonoidalReducer {
   constructor() {
     super(ValidationContext);
@@ -88,284 +139,318 @@ export class Validator extends MonoidalReducer {
     return reduce(new Validator, node).errors;
   }
 
-  reduceAssignmentExpression(node, binding, expression) {
-    let v = super.reduceAssignmentExpression(node, binding, expression);
-    if (node.binding.type === "IdentifierExpression") {
-      v = v.checkRestricted(node.binding.identifier);
+  reduceBindingIdentifier(node) {
+    let s = super.reduceBindingIdentifier(node);
+    if (!isValidIdentifierName(node.name)) {
+      if (node.name == "*default*") {
+        s = s.addBindingIdentifierCalledDefault(node);
+      }
+      else {
+        s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_BINDING_IDENTIFIER_NAME));
+      }
     }
-    return v;
+    return s;
   }
 
-  reduceBreakStatement(node, label) {
-    let v = super.reduceBreakStatement(node, label);
-    return node.label == null
-      ? v.addFreeBreakStatement(new ValidationError(node, "BreakStatement must be nested within switch or iteration statement"))
-      : v.addFreeBreakJumpTarget(node.label);
-  }
-
-  reduceCatchClause(node, param, body) {
-    return super.reduceCatchClause(node, param, body)
-      .checkRestricted(node.binding);
-  }
-
-  reduceContinueStatement(node, body, label) {
-    let v = super.reduceContinueStatement(node, body, label)
-      .addFreeContinueStatement(new ValidationError(node, "ContinueStatement must be inside an iteration statement"));
-    return node.label == null ? v : v.addFreeContinueJumpTarget(node.label);
-  }
-
-  reduceDoWhileStatement(node, body, test) {
-    return super.reduceDoWhileStatement(node, body, test)
-      .clearFreeContinueStatements()
-      .clearFreeBreakStatements();
-  }
-
-  reduceForInStatement(node, left, right, body) {
-    let v = super.reduceForInStatement(node, left, right, body)
-      .clearFreeBreakStatements()
-      .clearFreeContinueStatements();
-    if (node.left.type === "VariableDeclaration" && node.left.declarators.length > 1) {
-      v = v.addError(new ValidationError(node.left, "VariableDeclarationStatement in ForInVarStatement contains more than one VariableDeclarator"));
+  reduceBreakStatement(node) {
+    let s = super.reduceBreakStatement(node);
+    if (node.label !== null && !isValidIdentifierName(node.label)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_BREAK_STATEMENT_LABEL));
     }
-    return v;
+    return s;
   }
 
-  reduceForStatement(node, init, test, update, body) {
-    return super.reduceForStatement(node, init, test, update, body)
-      .clearFreeBreakStatements()
-      .clearFreeContinueStatements();
-  }
-
-  reduceFunctionBody(node, directives, sourceElements) {
-    let v = super.reduceFunctionBody(node, directives, sourceElements);
-    if (v.freeJumpTargets.length > 0) {
-      v = v.freeJumpTargets.reduce((v1, ident) => v1.addError(new ValidationError(ident, "Unbound break/continue label")), v);
+  reduceCatchClause(node, {binding, body}) {
+    let s = super.reduceCatchClause(node, {binding, body});
+    if (isMemberExpression(node.binding)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.CATCH_CLAUSE_BINDING_NOT_MEMBER_EXPRESSION));
     }
-    const isStrict = node.directives.some(directive => directive.type === "UseStrictDirective");
-    if (isStrict) {
-      v = v.enforceStrictErrors();
+    return s;
+  }
+
+  reduceContinueStatement(node) {
+    let s = super.reduceContinueStatement(node);
+    if (node.label !== null && !isValidIdentifierName(node.label)) {
+      s = s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_CONTINUE_STATEMENT_LABEL));
     }
-    return v.enforceFreeBreakAndContinueStatementErrors();
+    return s;
   }
 
-  reduceFunctionDeclaration(node, name, parameters, functionBody) {
-    let v = super.reduceFunctionDeclaration(node, name, parameters, functionBody)
-      .clearUsedLabelNames()
-      .clearFreeReturnStatements()
-      .checkRestricted(node.name);
-    if (!uniqueIdentifiers(node.parameters)) {
-      v = v.addStrictError(new ValidationError(node, "FunctionDeclaration must have unique parameter names"));
+  reduceDirective(node) {
+    let s = super.reduceDirective(node);
+    if (!isDirective(node.rawValue)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_DIRECTIVE));
     }
-    return node.parameters.reduce((v1, param) => v1.checkRestricted(param), v);
+    return s;
   }
 
-  reduceFunctionExpression(node, name, parameters, functionBody) {
-    let v = super.reduceFunctionExpression(node, name, parameters, functionBody)
-      .clearFreeReturnStatements();
-    if (node.name != null) {
-      v = v.checkRestricted(node.name);
+  reduceExportDefault(node, {body}) {
+    let s = super.reduceExportDefault(node, {body});
+    if (node.body.type === 'FunctionDeclaration' || node.body.type == 'ClassDeclaration') {
+      s = s.clearBindingIdentifiersCalledDefault();
     }
-    if (!uniqueIdentifiers(node.parameters)) {
-      v = v.addStrictError(new ValidationError(node, "FunctionExpression parameter names must be unique"));
+    return s;
+  }
+
+  reduceExportSpecifier(node) {
+    let s = super.reduceExportSpecifier(node);
+    if (node.name !== null && !isValidIdentifierName(node.name)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_EXPORT_SPECIFIER_NAME));
     }
-    return node.parameters.reduce((v1, param) => v1.checkRestricted(param), v);
-  }
-
-  reduceGetter(node, name, body) {
-    return super.reduceGetter(node, name, body)
-      .clearFreeReturnStatements();
-  }
-
-  reduceIdentifier(node) {
-    let v = this.identity;
-    if (!isIdentifierName(node.name)) {
-      v = v.addError(new ValidationError(node, "Identifier `name` must be a valid IdentifierName"));
+    if (!isIdentifierNameES6(node.exportedName)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_EXPORTED_NAME));
     }
-    return v;
+    return s;
   }
 
-  reduceIdentifierExpression(node, identifier) {
-    return super.reduceIdentifierExpression(node, identifier)
-      .checkReserved(node.identifier);
+  reduceForInStatement(node, {left, right, body}) {
+    let s = super.reduceForInStatement(node, {left, right, body});
+    if (node.left.type === 'VariableDeclaration') {
+      if (node.left.declarators.length != 1) {
+        s = s.addError(new ValidationError(node, ValidationErrorMessages.ONE_VARIABLE_DECLARATOR_IN_FOR_IN));
+      }
+      if (node.left.declarators.length > 0 && node.left.declarators[0].init !== null) {
+        s = s.addError(new ValidationError(node, ValidationErrorMessages.NO_INIT_IN_VARIABLE_DECLARATOR_IN_FOR_IN));
+      }
+    }
+    return s;
   }
 
-  reduceIfStatement(node, test, consequent, alternate) {
-    let v = super.reduceIfStatement(node, test, consequent, alternate);
+  reduceForOfStatement(node, {left, right, body}) {
+    let s = super.reduceForOfStatement(node, {left, right, body});
+    if (node.left.type === 'VariableDeclaration') {
+      if (node.left.declarators.length != 1) {
+        s = s.addError(new ValidationError(node, ValidationErrorMessages.ONE_VARIABLE_DECLARATOR_IN_FOR_OF));
+      }
+      if (node.left.declarators.length > 0 && node.left.declarators[0].init !== null) {
+        s = s.addError(new ValidationError(node, ValidationErrorMessages.NO_INIT_IN_VARIABLE_DECLARATOR_IN_FOR_OF));
+      }
+    }
+    return s;
+  }
+
+  reduceFormalParameters(node, {items, rest}) {
+    let s = super.reduceFormalParameters(node, {items, rest});
+    node.items.forEach(x => {
+      if (isMemberExpression(x)) {
+        s = s.addError(new ValidationError(node, ValidationErrorMessages.FORMAL_PARAMETER_ITEMS_NOT_MEMBER_EXPRESSION));
+      } else if (x.type === 'BindingWithDefault') {
+        if (isMemberExpression(x.binding)) {
+          s = s.addError(new ValidationError(node, ValidationErrorMessages.FORMAL_PARAMETER_ITEMS_BINDING_NOT_MEMBER_EXPRESSION));
+        }
+      }
+    });
+    return s;
+  }
+
+  reduceFunctionBody(node, {directives, statements}) {
+    let s = super.reduceFunctionBody(node, {directives, statements});
+    s = s.clearFreeReturnStatements();
+    return s;
+  }
+
+  reduceFunctionDeclaration(node, {name, params, body}) {
+    let s = super.reduceFunctionDeclaration(node, {name, params, body});
+    if (node.isGenerator) {
+      s = s.clearYieldExpressionsNotInGeneratorContext();
+      s = s.clearYieldGeneratorExpressionsNotInGeneratorContext();
+    }
+    return s;
+  }
+
+  reduceFunctionExpression(node, {name, params, body}) {
+    let s = super.reduceFunctionExpression(node, {name, params, body});
+    if (node.isGenerator) {
+      s = s.clearYieldExpressionsNotInGeneratorContext();
+      s = s.clearYieldGeneratorExpressionsNotInGeneratorContext();
+    }
+    return s;
+  }
+
+  reduceIdentifierExpression(node) {
+    let s = super.reduceIdentifierExpression(node);
+    if (!isValidIdentifierName(node.name)) {
+        s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_IDENTIFIER_NAME));
+    }
+    return s;
+  }
+
+  reduceIfStatement(node, {test, consequent, alternate}) {
+    let s = super.reduceIfStatement(node, {test, consequent, alternate});
     if (isProblematicIfStatement(node)) {
-      v = v.addError(new ValidationError(node, "IfStatement with null `alternate` must not be the `consequent` of an IfStatement with a non-null `alternate`"));
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_IF_STATEMENT));
     }
-    return v;
+    return s;
   }
 
-  reduceLabeledStatement(node, label, body) {
-    let v = super.reduceLabeledStatement(node, label, body);
-    if (v.usedLabelNames.some(s => s === node.label.name)) {
-      v = v.addError(new ValidationError(node, "Duplicate label name."));
+  reduceImportSpecifier(node, {binding}) {
+    let s = super.reduceImportSpecifier(node, {binding});
+    if (node.name !== null && !isIdentifierNameES6(node.name)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_IMPORT_SPECIFIER_NAME));
     }
-    if (isIterationStatement(node.body.type)) {
-        return v.observeIterationLabelName(node.label);
+    return s;
+  }
+
+  reduceLabeledStatement(node, {body}) {
+    let s = super.reduceLabeledStatement(node, {body});
+    if (!isValidIdentifierName(node.label)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_LABEL));
     }
-    return v.observeNonIterationLabelName(node.label);
+    return s;
   }
 
   reduceLiteralNumericExpression(node) {
-    let v = this.identity;
-    if (node.value < 0 || node.value == 0 && 1 / node.value < 0) {
-      v = v.addError(new ValidationError(node, "Numeric Literal node must be non-negative"));
-    } else if (node.value !== node.value) {
-      v = v.addError(new ValidationError(node, "Numeric Literal node must not be NaN"));
-    } else if (!global.isFinite(node.value)) {
-      v = v.addError(new ValidationError(node, "Numeric Literal node must be finite"));
+    let s = super.reduceLiteralNumericExpression(node);
+    if (isNaN(node.value)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.LITERAL_NUMERIC_VALUE_NOT_NAN));
     }
-    return v;
+    if (node.value < 0 || node.value == 0 && 1 / node.value < 0) { // second case is for -0
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.LITERAL_NUMERIC_VALUE_NOT_NEGATIVE));
+    }
+    if (!isNaN(node.value) && !isFinite(node.value)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.LITERAL_NUMERIC_VALUE_NOT_INFINITE));
+    }
+    return s;
   }
 
   reduceLiteralRegExpExpression(node) {
-    let v = this.identity;
-    const message = "LiteralRegExpExpresssion must contain a valid string representation of a RegExp",
-      firstSlash = node.value.indexOf("/"),
-      lastSlash = node.value.lastIndexOf("/");
-    if (firstSlash !== 0 || firstSlash === lastSlash) {
-      v = v.addError(new ValidationError(node, message));
-    } else {
-      try {
-        RegExp(node.value.slice(1, lastSlash), node.value.slice(lastSlash + 1));
-      } catch(e) {
-        v = v.addError(new ValidationError(node, message));
+    let s = super.reduceLiteralRegExpExpression(node);
+    if (!isValidRegex(node.pattern, node.flags)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_REG_EX_PATTERN));
+    }
+    return s;
+  }
+
+  reduceMethod(node, {params, body, name}) {
+    let s = super.reduceMethod(node, {params, body, name});
+    if (node.isGenerator) {
+      s = s.clearYieldExpressionsNotInGeneratorContext();
+      s = s.clearYieldGeneratorExpressionsNotInGeneratorContext();
+    }
+    return s;
+  }
+
+  reduceModule(node, {directives, items}) {
+    let s = super.reduceModule(node, {directives, items});
+    s = s.enforceFreeReturnStatements();
+    s = s.enforceBindingIdentifiersCalledDefault();
+    s = s.enforceYieldExpressionsNotInGeneratorContext();
+    s = s.enforceYieldGeneratorExpressionsNotInGeneratorContext();
+    // s.errors.forEach(console.log.bind(console))
+    return s;
+  }
+
+  reduceReturnStatement(node, {expression}) {
+    let s = super.reduceReturnStatement(node, {expression});
+    s = s.addFreeReturnStatement(node);
+    return s;
+  }
+
+  reduceScript(node, {directives, statements}) {
+    let s = super.reduceScript(node, {directives, statements});
+    s = s.enforceFreeReturnStatements();
+    s = s.enforceBindingIdentifiersCalledDefault();
+    s = s.enforceYieldExpressionsNotInGeneratorContext();
+    s = s.enforceYieldGeneratorExpressionsNotInGeneratorContext();
+    // s.errors.forEach(console.log.bind(console))
+    return s;
+  }
+
+  reduceSetter(node, {name, param, body}) {
+    let s = super.reduceSetter(node, {name, param, body});
+    if (isMemberExpression(node.param)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.SETTER_PARAM_NOT_MEMBER_EXPRESSION));
+    } else if (node.param.type === 'BindingWithDefault') {
+      if (isMemberExpression(node.param).binding) {
+        s = s.addError(new ValidationError(node, ValidationErrorMessages.SETTER_PARAM_BINDING_NOT_MEMBER_EXPRESSION));
       }
     }
-    return v;
+    return s;
   }
 
-  reduceObjectExpression(node, properties) {
-    let v = super.reduceObjectExpression(node, properties);
-    const setKeys = Object.create(null);
-    const getKeys = Object.create(null);
-    const dataKeys = Object.create(null);
-    node.properties.forEach(p => {
-      let key = ` ${p.name.value}`;
-      switch (p.type) {
-        case "DataProperty":
-          if (p.name.value === "__proto__" && dataKeys[key]) {
-            v = v.addError(new ValidationError(node, "ObjectExpression must not have multiple data properties with name __proto__"));
+  reduceShorthandProperty(node) {
+    let s = super.reduceShorthandProperty(node);
+    if (!isValidIdentifierName(node.name)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_SHORTHAND_PROPERTY_NAME));
+    }
+    return s;
+  }
+
+  reduceStaticMemberExpression(node, {object}) {
+    let s = super.reduceStaticMemberExpression(node, {object});
+    if (!isIdentifierNameES6(node.property)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_STATIC_MEMBER_EXPRESSION_PROPERTY_NAME));
+    }
+    return s;
+  }
+
+  reduceTemplateElement(node) {
+    let s = super.reduceTemplateElement(node);
+    if (!isTemplateElement(node.rawValue)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_TEMPLATE_ELEMENT_VALUE));
+    }
+    return s;
+  }
+
+  reduceTemplateExpression(node, {tag, elements}) {
+    let s = super.reduceTemplateExpression(node, {tag, elements});
+    if (node.elements.length > 0) {
+      if (node.elements.length % 2 == 0) {
+        s = s.addError(new ValidationError(node, ValidationErrorMessages.ALTERNATING_TEMPLATE_EXPRESSION_ELEMENTS));
+      } else {
+        node.elements.forEach((x, i) => {
+          if (i % 2 == 0) {
+            if (!(x.type === 'TemplateElement')) {
+              s = s.addError(new ValidationError(node, ValidationErrorMessages.ALTERNATING_TEMPLATE_EXPRESSION_ELEMENTS));
+            }
+          } else {
+            if (x.type === 'TemplateElement') {
+              s = s.addError(new ValidationError(node, ValidationErrorMessages.ALTERNATING_TEMPLATE_EXPRESSION_ELEMENTS));
+            }
           }
-          if (getKeys[key]) {
-            v = v.addError(new ValidationError(node, "ObjectExpression must not have data and getter properties with same name"));
-          }
-          if (setKeys[key]) {
-            v = v.addError(new ValidationError(node, "ObjectExpression must not have data and setter properties with same name"));
-          }
-          dataKeys[key] = true;
-          break;
-        case "Getter":
-          if (getKeys[key]) {
-            v = v.addError(new ValidationError(node, "ObjectExpression must not have multiple getters with the same name"));
-          }
-          if (dataKeys[key]) {
-            v = v.addError(new ValidationError(node, "ObjectExpression must not have data and getter properties with the same name"));
-          }
-          getKeys[key] = true;
-          break;
-        case "Setter":
-          if (setKeys[key]) {
-            v = v.addError(new ValidationError(node, "ObjectExpression must not have multiple setters with the same name"));
-          }
-          if (dataKeys[key]) {
-            v = v.addError(new ValidationError(node, "ObjectExpression must not have data and setter properties with the same name"));
-          }
-          setKeys[key] = true;
-          break;
+        });
       }
-    });
-    return v;
-  }
-
-  reducePostfixExpression(node, operand) {
-    let v = super.reducePostfixExpression(node, operand);
-    if ((node.operator === "++" || node.operator === "--") && node.operand.type === "IdentifierExpression") {
-      v = v.checkRestricted(node.operand.identifier);
     }
-    return v;
+    return s;
   }
 
-  reducePrefixExpression(node, operand) {
-    let v = super.reducePrefixExpression(node, operand);
-    if (node.operator === "delete" && node.operand.type === "IdentifierExpression") {
-      v = v.addStrictError(new ValidationError(node, "`delete` with unqualified identifier not allowed in strict mode"));
-    } else if ((node.operator === "++" || node.operator === "--") && node.operand.type === "IdentifierExpression") {
-      v = v.checkRestricted(node.operand.identifier);
+  reduceVariableDeclaration(node, {declarators}) {
+    let s = super.reduceVariableDeclaration(node, {declarators});
+    if (node.declarators.length == 0) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.NOT_EMPTY_VARIABLE_DECLARATORS_LIST));
     }
-    return v;
+    return s;
   }
 
-  reducePropertyName(node) {
-    let v = super.reducePropertyName(node);
-    switch (node.kind) {
-      case "identifier":
-        if (!isIdentifierName(node.value)) {
-          v = v.addError(new ValidationError(node, "PropertyName with identifier kind must have IdentifierName value"));
+  reduceVariableDeclarationStatement(node, {declaration}) {
+    let s = super.reduceVariableDeclarationStatement(node, {declaration});
+    if (node.declaration.kind === 'const') {
+      node.declaration.declarators.forEach(x => {
+        if (x.init === null) {
+          s = s.addError(new ValidationError(node, ValidationErrorMessages.CONST_VARIABLE_DECLARATION_MUST_HAVE_INIT));
         }
-        break;
-      case "number":
-        if (!/^(?:0|[1-9]\d*\.?\d*)$/.test(node.value)) {
-          v = v.addError(new ValidationError(node, "PropertyName with number kind must have numeric value"));
-        }
-        break;
+      });
     }
-    return v;
+    return s;
   }
 
-  reduceReturnStatement(node, expression) {
-    return super.reduceReturnStatement(node, expression)
-      .addFreeReturnStatement(new ValidationError(node, "Return statement must be inside of a function"));
-  }
-
-  reduceScript(node, body) {
-    return super.reduceScript(node, body)
-      .enforceFreeReturnStatementErrors();
-  }
-
-  reduceSetter(node, name, parameter, body) {
-    return super.reduceSetter(node, name, parameter, body)
-      .clearFreeReturnStatements()
-      .checkRestricted(node.parameter);
-  }
-
-  reduceSwitchStatement(node, discriminant, cases) {
-    return super.reduceSwitchStatement(node, discriminant, cases)
-      .clearFreeBreakStatements();
-  }
-
-  reduceSwitchStatementWithDefault(node, discriminant, preDefaultCases, defaultCase, postDefaultCases) {
-    return super.reduceSwitchStatementWithDefault(node, discriminant, preDefaultCases, defaultCase, postDefaultCases)
-      .clearFreeBreakStatements();
-  }
-
-  reduceVariableDeclarator(node, binding, init) {
-    let v = super.reduceVariableDeclarator(node, binding, init)
-      .checkRestricted(node.binding);
-    if (node.init == null) {
-      v = v.addUninitialisedDeclarator(new ValidationError(node, "Constant declarations must be initialised"));
+  reduceVariableDeclarator(node, {binding, init}) {
+    let s = super.reduceVariableDeclarator(node, {binding, init});
+    if (isMemberExpression(node.binding)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VARIABLE_DECLARATION_BINDING_NOT_MEMBER_EXPRESSION));
     }
-    return v;
+    return s;
   }
 
-  reduceVariableDeclarationStatement(node, declaration) {
-    let v = super.reduceVariableDeclarationStatement(node, declaration);
-    if (node.declaration.kind === "const") {
-      v = v.enforceUninitialisedDeclarators();
-    }
-    return v;
+  reduceYieldExpression(node, {expression}) {
+    let s = super.reduceYieldExpression(node, {expression});
+    s = s.addYieldExpressionNotInGeneratorContext(node);
+    return s;
   }
 
-  reduceWithStatement(node, object, body) {
-    return super.reduceWithStatement(node, object, body)
-      .addStrictError(new ValidationError(node, "WithStatement not allowed in strict mode"));
-  }
-
-  reduceWhileStatement(node, test, body) {
-    return super.reduceWhileStatement(node, test, body)
-      .clearFreeBreakStatements()
-      .clearFreeContinueStatements();
+  reduceYieldGeneratorExpression(node, {expression}) {
+    let s = super.reduceYieldGeneratorExpression(node, {expression});
+    s = s.addYieldGeneratorExpressionNotInGeneratorContext(node);
+    return s;
   }
 }

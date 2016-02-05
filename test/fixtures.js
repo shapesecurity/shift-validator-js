@@ -14,24 +14,29 @@
  * limitations under the License.
  */
 
-import * as fs from "fs";
-import * as assert from "assert";
+import fs from "fs";
+import assert from "assert";
 
-import * as Shift from "shift-ast";
-import parse from "shift-parser";
+import {parseScript, parseModule} from "shift-parser";
 
 import isValid, {Validator} from "../";
 
 suite("fixtures", () => {
   test("validator is valid", () => {
     let source = "" + fs.readFileSync(require.resolve("../"));
-    let ast = parse(source);
+    let ast = parseScript(source);
     assert(isValid(ast));
   });
 
-  test("everything.js is valid", () => {
-    let source = "" + fs.readFileSync(require.resolve("everything.js"));
-    let ast = parse(source);
+  test("everything.js Script is valid", () => {
+    let source = "" + fs.readFileSync(require.resolve("everything.js/es2015-script"));
+    let ast = parseScript(source);
+    assert(isValid(ast));
+  });
+
+  test("everything.js Module is valid", () => {
+    let source = "" + fs.readFileSync(require.resolve("everything.js/es2015-module"));
+    let ast = parseModule(source);
     assert(isValid(ast));
   });
 });

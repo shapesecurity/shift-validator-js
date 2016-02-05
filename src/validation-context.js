@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Shape Security, Inc.
+ * Copyright 2016 Shape Security, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,199 +14,131 @@
  * limitations under the License.
  */
 
-import * as objectAssign from "object-assign";
-import {keyword} from "esutils";
-const {isRestrictedWord, isReservedWordES5} = keyword;
-
-const proto = {
-  __proto__: null,
-  freeBreakStatements: [],
-  freeContinueStatements: [],
-  usedLabelNames: [],
-  freeJumpTargets: [],
-  freeReturnStatements: [],
-  uninitialisedDeclarators: [],
-  errors: [],
-  strictErrors: [],
-};
-
-let identity; // initialised below ValidationContext
+import ValidationErrorMessages from "./validation-errors";
 
 export class ValidationContext {
-
-  constructor() { }
-
-  clone(additionalProperties = {}) {
-    return objectAssign(objectAssign(new ValidationContext, this), additionalProperties);
+  constructor({
+    errors = [],
+    freeReturnStatements = [],
+    bindingIdentifiersCalledDefault = [],
+    yieldExpressionsNotInGeneratorContext = [],
+    yieldGeneratorExpressionsNotInGeneratorContext = []
+  } = {}) {
+    this.errors = errors;
+    this.freeReturnStatements = freeReturnStatements;
+    this.bindingIdentifiersCalledDefault = bindingIdentifiersCalledDefault;
+    this.yieldExpressionsNotInGeneratorContext = yieldExpressionsNotInGeneratorContext;
+    this.yieldGeneratorExpressionsNotInGeneratorContext = yieldGeneratorExpressionsNotInGeneratorContext;
   }
 
+  static empty() {
+    return new ValidationContext;
+  }
 
-  addFreeBreakStatement(s) {
-    return this.clone({
-      freeBreakStatements: this.freeBreakStatements.concat([s]),
+  concat(b) {
+    return new ValidationContext({
+      errors: this.errors.concat(b.errors),
+      freeReturnStatements: this.freeReturnStatements.concat(b.freeReturnStatements),
+      bindingIdentifiersCalledDefault: this.bindingIdentifiersCalledDefault.concat(b.bindingIdentifiersCalledDefault),
+      yieldExpressionsNotInGeneratorContext: this.yieldExpressionsNotInGeneratorContext.concat(b.yieldExpressionsNotInGeneratorContext),
+      yieldGeneratorExpressionsNotInGeneratorContext: this.yieldGeneratorExpressionsNotInGeneratorContext.concat(b.yieldGeneratorExpressionsNotInGeneratorContext)
     });
   }
 
-  clearFreeBreakStatements() {
-    return this.clone({
-      freeBreakStatements: [],
-    });
+  addError(e) {
+    let s = new ValidationContext(this);
+    s.errors = s.errors.concat([e]);
+    return s;
   }
-
-  addFreeContinueStatement(s) {
-    return this.clone({
-      freeContinueStatements: this.freeContinueStatements.concat([s]),
-    });
-  }
-
-  clearFreeContinueStatements() {
-    return this.clone({
-      freeContinueStatements: [],
-    });
-  }
-
-  enforceFreeBreakAndContinueStatementErrors() {
-    return this.clone({
-      freeBreakStatements: [],
-      freeContinueStatements: [],
-      errors: this.errors.concat(this.freeBreakStatements).concat(this.freeContinueStatements),
-    });
-  }
-
-
-  observeIterationLabelName(label) {
-    return this.clone({
-      usedLabelNames: this.usedLabelNames.concat([label.name]),
-      freeJumpTargets: this.freeJumpTargets.filter(info => info.name !== label.name),
-    });
-  }
-
-  observeNonIterationLabelName(label) {
-    return this.clone({
-      usedLabelNames: this.usedLabelNames.concat([label.name]),
-      freeJumpTargets: this.freeJumpTargets.filter(info => info.name !== label.name || info.type !== 'break'),
-    });
-  }
-
-  clearUsedLabelNames() {
-    return this.clone({
-      usedLabelNames: [],
-    });
-  }
-
-  addFreeBreakJumpTarget(label) {
-    return this.clone({
-      freeJumpTargets: this.freeJumpTargets.concat([{name: label.name, type: 'break'}]),
-    });
-  }
-
-  addFreeContinueJumpTarget(label) {
-    return this.clone({
-      freeJumpTargets: this.freeJumpTargets.concat([{name: label.name, type: 'continue'}]),
-    });
-  }
-
 
   addFreeReturnStatement(r) {
-    return this.clone({
-      freeReturnStatements: this.freeReturnStatements.concat([r]),
-    });
+    let s = new ValidationContext(this);
+    s.freeReturnStatements = s.freeReturnStatements.concat([r]);
+    return s;
+  }
+
+  enforceFreeReturnStatements() {
+    let errors = [];
+    this.freeReturnStatements.forEach(r => errors.push(new ValidationError(r, ValidationErrorMessages.RETURN_STATEMENT_IN_FUNCTION_BODY)));
+    let s = new ValidationContext(this);
+    s.errors = s.errors.concat(errors);
+    s.freeReturnStatements = [];
+    return s;
   }
 
   clearFreeReturnStatements() {
-    return this.clone({
-      freeReturnStatements: [],
-    });
+    let s = new ValidationContext(this);
+    s.freeReturnStatements = [];
+    return s;
   }
 
-  enforceFreeReturnStatementErrors() {
-    return this.clone({
-      freeReturnStatements: [],
-      errors: this.errors.concat(this.freeReturnStatements),
-    });
+  addBindingIdentifierCalledDefault(b) {
+    let s = new ValidationContext(this);
+    s.bindingIdentifiersCalledDefault = s.bindingIdentifiersCalledDefault.concat([b]);
+    return s;
   }
 
-
-  addUninitialisedDeclarator(node) {
-    return this.clone({
-      uninitialisedDeclarators: this.uninitialisedDeclarators.concat(node),
-    });
+  enforceBindingIdentifiersCalledDefault() {
+    let errors = [];
+    this.bindingIdentifiersCalledDefault.forEach(r => errors.push(new ValidationError(r, ValidationErrorMessages.BINDING_IDENTIFIERS_CALLED_DEFAULT)));
+    let s = new ValidationContext(this);
+    s.errors = s.errors.concat(errors);
+    s.bindingIdentifiersCalledDefault = [];
+    return s;
   }
 
-  enforceUninitialisedDeclarators() {
-    return this.clone({
-      uninitialisedDeclarators: [],
-      errors: this.errors.concat(this.uninitialisedDeclarators),
-    });
+  clearBindingIdentifiersCalledDefault() {
+    let s = new ValidationContext(this);
+    s.bindingIdentifiersCalledDefault = [];
+    return s;
   }
 
-
-  addError(e) {
-    return this.clone({
-      errors: this.errors.concat([e]),
-    });
+  addYieldExpressionNotInGeneratorContext(e) {
+    let s = new ValidationContext(this);
+    s.yieldExpressionsNotInGeneratorContext = s.yieldExpressionsNotInGeneratorContext.concat([e]);
+    return s;
   }
 
-  addStrictError(e) {
-    return this.clone({
-      strictErrors: this.strictErrors.concat([e]),
-    });
+  enforceYieldExpressionsNotInGeneratorContext() {
+    let errors = [];
+    this.yieldExpressionsNotInGeneratorContext.forEach(r => errors.push(new ValidationError(r, ValidationErrorMessages.VALID_YIELD_EXPRESSION_POSITION)));
+    let s = new ValidationContext(this);
+    s.errors = s.errors.concat(errors);
+    s.yieldExpressionsNotInGeneratorContext = [];
+    return s;
   }
 
-  enforceStrictErrors() {
-    return this.clone({
-      errors: this.errors.concat(this.strictErrors),
-      strictErrors: [],
-    });
+  clearYieldExpressionsNotInGeneratorContext() {
+    let s = new ValidationContext(this);
+    s.yieldExpressionsNotInGeneratorContext = [];
+    return s;
   }
 
-  // MONOID IMPLEMENTATION
-
-  static empty() {
-    return identity;
+  addYieldGeneratorExpressionNotInGeneratorContext(e) {
+    let s = new ValidationContext(this);
+    s.yieldGeneratorExpressionsNotInGeneratorContext = s.yieldGeneratorExpressionsNotInGeneratorContext.concat([e]);
+    return s;
   }
 
-  concat(v) {
-    if (this === identity) return v;
-    if (v === identity) return this;
-    return this.clone({
-      freeBreakStatements: this.freeBreakStatements.concat(v.freeBreakStatements),
-      freeContinueStatements: this.freeContinueStatements.concat(v.freeContinueStatements),
-      usedLabelNames: this.usedLabelNames.concat(v.usedLabelNames),
-      freeJumpTargets: this.freeJumpTargets.concat(v.freeJumpTargets),
-      freeReturnStatements: this.freeReturnStatements.concat(v.freeReturnStatements),
-      uninitialisedDeclarators: this.uninitialisedDeclarators.concat(v.uninitialisedDeclarators),
-      errors: this.errors.concat(v.errors),
-      strictErrors: this.strictErrors.concat(v.strictErrors)
-    });
+  enforceYieldGeneratorExpressionsNotInGeneratorContext() {
+    let errors = [];
+    this.yieldGeneratorExpressionsNotInGeneratorContext.forEach(r => errors.push(new ValidationError(r, ValidationErrorMessages.VALID_YIELD_GENERATOR_EXPRESSION_POSITION)));
+    let s = new ValidationContext(this);
+    s.errors = s.errors.concat(errors);
+    s.yieldGeneratorExpressionsNotInGeneratorContext = [];
+    return s;
   }
 
-  // HELPERS
-
-  checkReserved(identifier) {
-    if (isReservedWordES5(identifier.name, true)) {
-      if (isReservedWordES5(identifier.name, false)) {
-        return this.addError(new ValidationError(identifier, "Identifier must not be reserved word in this position"));
-      }
-      return this.addStrictError(new ValidationError(identifier, "Identifier must not be strict mode reserved word in this position"));
-    }
-    return this;
-  }
-
-  checkRestricted(identifier) {
-    let v = this.checkReserved(identifier);
-    if (isRestrictedWord(identifier.name)) {
-      return v.addStrictError(new ValidationError(identifier, "Identifier must not be restricted word in this position in strict mode"));
-    }
-    return v;
+  clearYieldGeneratorExpressionsNotInGeneratorContext() {
+    let s = new ValidationContext(this);
+    s.yieldGeneratorExpressionsNotInGeneratorContext = [];
+    return s;
   }
 }
 
-identity = new ValidationContext;
-objectAssign(identity, proto);
-
 export class ValidationError extends Error {
   constructor(node, message) {
+    super();
     this.node = node;
     this.message = message;
   }

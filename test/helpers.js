@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Shape Security, Inc.
+ * Copyright 2016 Shape Security, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import * as assert from "assert";
+import assert from "assert";
 
 import * as Shift from "shift-ast";
 import isValid, {Validator} from "../";
@@ -57,63 +57,42 @@ export function invalidExpr(numExpectedErrors, expr) {
   assert.equal(errs.length, numExpectedErrors);
 }
 
+export function valid(program) {
+  assert(isValid(program));
+  assertValid(Validator.validate(program));
+}
+
+export function invalid(numExpectedErrors, program) {
+  assert(!isValid(program));
+  let errs = Validator.validate(program);
+  assert.notEqual(errs.length, 0, "expression should have errors");
+  assert.equal(errs.length, numExpectedErrors);
+}
+
 export function exprStmt(expr) {
-  return new Shift.ExpressionStatement(expr);
+  return new Shift.ExpressionStatement({expression: expr});
 }
 
 export function label(l, stmt) {
-  return new Shift.LabeledStatement(new Shift.Identifier(l), stmt);
+  return new Shift.LabeledStatement({label: l, body: stmt});
 }
 export function wrapIter(stmt) {
-  return new Shift.WhileStatement(new Shift.LiteralBooleanExpression(true), stmt);
-}
-
-export function prop(x) {
-  let kind, value;
-  switch (typeof x) {
-    case "number":
-    case "string":
-      kind = typeof x;
-      value = "" + x;
-      break;
-    default:
-      kind = "identifier";
-      value = x.name;
-  }
-  return new Shift.PropertyName(kind, value);
+  return new Shift.WhileStatement({test: new Shift.LiteralBooleanExpression({value: true}), body: stmt});
 }
 
 export function block(stmt) {
-  return new Shift.BlockStatement(new Shift.Block([stmt]));
+  return new Shift.BlockStatement({block: new Shift.Block({statements: [stmt]})});
 }
 
-export function FE(stmt) {
-  return new Shift.FunctionExpression(ID, [], new Shift.FunctionBody([], [stmt]));
-}
-
-export function FD(stmt) {
-  return new Shift.FunctionDeclaration(ID, [], new Shift.FunctionBody([], [stmt]));
-}
-
-function declarator(name) {
-  return new Shift.VariableDeclarator(new Shift.Identifier(name));
-}
-
-export function vars(kind, ...names) {
-  return new Shift.VariableDeclaration(kind, names.map(declarator));
-}
-
-export function varsStmt(kind, ...names) {
-  return new Shift.VariableDeclarationStatement(vars(kind, ...names));
-}
-
-export const BLOCK = new Shift.Block([]);
-export const BLOCK_STMT = new Shift.BlockStatement(BLOCK);
+export const BLOCK = new Shift.Block({statements: []});
+export const BLOCK_STMT = new Shift.BlockStatement({block: BLOCK});
 export const EXPR = new Shift.LiteralNullExpression;
-export const ID = new Shift.Identifier("a");
-export const NUM = new Shift.LiteralNumericExpression(0);
+export const BI = new Shift.BindingIdentifier({name: "a"});
+export const IE = new Shift.IdentifierExpression({name: "a"});
+export const ID = "a";
+export const NUM = new Shift.LiteralNumericExpression({value: 0});
 export const STMT = new Shift.EmptyStatement;
 
 export function wrapScript(stmt) {
-  return new Shift.Script(new Shift.FunctionBody([], [stmt]));
+  return new Shift.Script({directives: [], statements: [stmt]});
 }
