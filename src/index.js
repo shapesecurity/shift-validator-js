@@ -135,6 +135,11 @@ export class Validator extends MonoidalReducer {
     return reduce(new Validator, node).errors;
   }
 
+  reduceArrowExpression(node, {params, body}) {
+    let s = super.reduceArrowExpression(node, {params, body: body.enforceYields()});
+    return s;
+  }
+
   reduceAssignmentTargetIdentifier(node) {
     let s = super.reduceAssignmentTargetIdentifier(node);
     if (!isValidIdentifierName(node.name)) {
@@ -233,6 +238,12 @@ export class Validator extends MonoidalReducer {
     return s;
   }
 
+  reduceFormalParameters(node, {items, rest}) {
+    let s = super.reduceFormalParameters(node, {items, rest});
+    s = s.enforceYields();
+    return s;
+  }
+
   reduceFunctionBody(node, {directives, statements}) {
     let s = super.reduceFunctionBody(node, {directives, statements});
     s = s.clearFreeReturnStatements();
@@ -240,20 +251,19 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceFunctionDeclaration(node, {name, params, body}) {
+    body = node.isGenerator ? body.clearYields() : body.enforceYields();
     let s = super.reduceFunctionDeclaration(node, {name, params, body});
-    if (node.isGenerator) {
-      s = s.clearYieldExpressionsNotInGeneratorContext();
-      s = s.clearYieldGeneratorExpressionsNotInGeneratorContext();
-    }
     return s;
   }
 
   reduceFunctionExpression(node, {name, params, body}) {
+    body = node.isGenerator ? body.clearYields() : body.enforceYields();
     let s = super.reduceFunctionExpression(node, {name, params, body});
-    if (node.isGenerator) {
-      s = s.clearYieldExpressionsNotInGeneratorContext();
-      s = s.clearYieldGeneratorExpressionsNotInGeneratorContext();
-    }
+    return s;
+  }
+
+  reduceGetter(node, {name, body}) {
+    let s = super.reduceGetter(node, {name, body: body.enforceYields()});
     return s;
   }
 
@@ -312,11 +322,8 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceMethod(node, {params, body, name}) {
+    body = node.isGenerator ? body.clearYields() : body.enforceYields();
     let s = super.reduceMethod(node, {params, body, name});
-    if (node.isGenerator) {
-      s = s.clearYieldExpressionsNotInGeneratorContext();
-      s = s.clearYieldGeneratorExpressionsNotInGeneratorContext();
-    }
     return s;
   }
 
@@ -324,8 +331,7 @@ export class Validator extends MonoidalReducer {
     let s = super.reduceModule(node, {directives, items});
     s = s.enforceFreeReturnStatements();
     s = s.enforceBindingIdentifiersCalledDefault();
-    s = s.enforceYieldExpressionsNotInGeneratorContext();
-    s = s.enforceYieldGeneratorExpressionsNotInGeneratorContext();
+    s = s.enforceYields();
     return s;
   }
 
@@ -339,8 +345,12 @@ export class Validator extends MonoidalReducer {
     let s = super.reduceScript(node, {directives, statements});
     s = s.enforceFreeReturnStatements();
     s = s.enforceBindingIdentifiersCalledDefault();
-    s = s.enforceYieldExpressionsNotInGeneratorContext();
-    s = s.enforceYieldGeneratorExpressionsNotInGeneratorContext();
+    s = s.enforceYields();
+    return s;
+  }
+
+  reduceSetter(node, {name, param, body}) {
+    let s = super.reduceSetter(node, {name, param, body: body.enforceYields()});
     return s;
   }
 

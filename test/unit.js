@@ -373,4 +373,66 @@ suite("unit", () => {
     method.isGenerator = false;
     invalidExpr(1, objExpr);
   });
+
+  test("Yield must not be contained in ArrowExpressions", () => {
+    let yieldExpr = new Shift.YieldExpression({expression: null});
+    let params = new Shift.FormalParameters({items: [new Shift.BindingWithDefault({binding: new Shift.BindingIdentifier({name: "a"}), init: new Shift.LiteralNullExpression})], rest: null});
+    let arrow = new Shift.ArrowExpression({params, body: new Shift.LiteralNullExpression});
+
+    let body = new Shift.FunctionBody({directives: [], statements: [new Shift.ExpressionStatement({expression: arrow})]});
+    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+
+    validExpr(fnExpr);
+
+    params.items[0].init = yieldExpr;
+    invalidExpr(1, fnExpr);
+
+    params.items[0].init = new Shift.LiteralNullExpression;
+    arrow.body = yieldExpr;
+    invalidExpr(1, fnExpr);
+  });
+
+  test("Yield must not be the computed name of a generator method outside of a generator context", () => {
+    let yieldExpr = new Shift.YieldExpression({expression: null});
+    let obj = new Shift.ObjectExpression({properties: [new Shift.Method({isGenerator: true, name: new Shift.ComputedPropertyName({expression: yieldExpr}), params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})})]});
+
+    let body = new Shift.FunctionBody({directives: [], statements: [new Shift.ExpressionStatement({expression: obj})]});
+    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+
+    validExpr(fnExpr);
+
+    fnExpr.isGenerator = false;
+    invalidExpr(1, fnExpr);
+  });
+
+  test("Yield must not be in a nested non-generator function", () => {
+    let emptyParams = new Shift.FormalParameters({items: [], rest: null});
+    let yieldBody = new Shift.FunctionBody({
+      directives: [],
+      statements: [new Shift.ExpressionStatement({expression: new Shift.YieldExpression({expression: null})})]
+    });
+    let nested = [new Shift.FunctionDeclaration({name: BI, isGenerator: true, params: emptyParams, body: yieldBody})];
+
+    let outer = new Shift.FunctionDeclaration({name: BI, isGenerator: true, params: emptyParams, body: new Shift.FunctionBody({
+      directives: [],
+      statements: nested
+    })});
+
+    validStmt(outer);
+
+    nested[0].isGenerator = false;
+    invalidStmt(1, outer);
+
+    nested[0] = new Shift.ExpressionStatement({expression: new Shift.FunctionExpression({name: BI, isGenerator: true, params: emptyParams, body: yieldBody})})
+    validStmt(outer);
+
+    nested[0].expression.isGenerator = false;
+    invalidStmt(1, outer);
+
+    nested[0] = new Shift.ObjectExpression({properties: [new Shift.Getter({name: new Shift.StaticPropertyName({value: ID}), body: yieldBody})]});
+    invalidStmt(1, outer);
+
+    nested[0] = new Shift.ObjectExpression({properties: [new Shift.Setter({name: new Shift.StaticPropertyName({value: ID}), param: BI, body: yieldBody})]});
+    invalidStmt(1, outer);
+  });
 });

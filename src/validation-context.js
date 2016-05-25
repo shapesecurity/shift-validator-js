@@ -134,6 +134,14 @@ export class ValidationContext {
     s.yieldGeneratorExpressionsNotInGeneratorContext = [];
     return s;
   }
+
+  enforceYields() {
+    return this.enforceYieldExpressionsNotInGeneratorContext().enforceYieldGeneratorExpressionsNotInGeneratorContext();
+  }
+
+  clearYields() {
+    return this.clearYieldExpressionsNotInGeneratorContext().clearYieldGeneratorExpressionsNotInGeneratorContext();
+  }
 }
 
 export class ValidationError extends Error {
