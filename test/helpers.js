@@ -87,6 +87,7 @@ export function block(stmt) {
 export const BLOCK = new Shift.Block({statements: []});
 export const BLOCK_STMT = new Shift.BlockStatement({block: BLOCK});
 export const EXPR = new Shift.LiteralNullExpression;
+export const ATI = new Shift.AssignmentTargetIdentifier({name: "a"});
 export const BI = new Shift.BindingIdentifier({name: "a"});
 export const IE = new Shift.IdentifierExpression({name: "a"});
 export const ID = "a";

@@ -16,7 +16,7 @@
 
 import * as Shift from "shift-ast"
 
-import {validStmt, invalidStmt, validExpr, invalidExpr, valid, invalid, wrapIter, exprStmt, label, block, BLOCK, BI, IE, ID, STMT, EXPR} from "./helpers"
+import {validStmt, invalidStmt, validExpr, invalidExpr, valid, invalid, wrapIter, exprStmt, label, block, BLOCK, ATI, BI, IE, ID, STMT, EXPR} from "./helpers"
 
 suite("unit", () => {
   test("LiteralRegExpExpression value must be a valid RegExp", () => {
@@ -106,8 +106,8 @@ suite("unit", () => {
     invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: new Shift.WhileStatement({test: EXPR, body: new Shift.IfStatement({test: EXPR, consequent: STMT, alternate: null})}), alternate: STMT}));
     invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: new Shift.WithStatement({object: EXPR, body: new Shift.IfStatement({test: EXPR, consequent: STMT, alternate: null})}), alternate: STMT}));
     invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: new Shift.ForStatement({init: EXPR, test: EXPR, update: EXPR, body: new Shift.IfStatement({test: EXPR, consequent: STMT, alternate: null})}), alternate: STMT}));
-    invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: new Shift.ForInStatement({left: BI, right: EXPR, body: new Shift.IfStatement({test: EXPR, consequent: STMT, alternate: null})}), alternate: STMT}));
-    invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: new Shift.ForOfStatement({left: BI, right: EXPR, body: new Shift.IfStatement({test: EXPR, consequent: STMT, alternate: null})}), alternate: STMT}));
+    invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: new Shift.ForInStatement({left: ATI, right: EXPR, body: new Shift.IfStatement({test: EXPR, consequent: STMT, alternate: null})}), alternate: STMT}));
+    invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: new Shift.ForOfStatement({left: ATI, right: EXPR, body: new Shift.IfStatement({test: EXPR, consequent: STMT, alternate: null})}), alternate: STMT}));
   });
 
   test("LiteralNumericExpression nodes must not be NaN", () => {
@@ -145,16 +145,6 @@ suite("unit", () => {
     invalidStmt(1, new Shift.LabeledStatement({label: ID, body: new Shift.WhileStatement({test: EXPR, body: new Shift.BlockStatement({block: new Shift.Block({statements: [new Shift.ContinueStatement({label: "1"})]})})})}));
   });
 
-  test("Catch clause binding must not be a member expression", () => {
-    let catchClause = new Shift.CatchClause({binding: BI, body: BLOCK});
-    let tryStmt = new Shift.TryCatchStatement({body: BLOCK, catchClause});
-    validStmt(tryStmt);
-    catchClause.binding = new Shift.ComputedMemberExpression({object: EXPR, expression: EXPR});
-    invalidStmt(1, tryStmt);
-    catchClause.binding = new Shift.StaticMemberExpression({object: EXPR, property: ID});
-    invalidStmt(1, tryStmt);
-  });
-
   test("Directive must be a string literal", () => {
     let directive = new Shift.Directive({rawValue: ""});
     let script = new Shift.Script({directives: [directive], statements: []});
@@ -176,7 +166,7 @@ suite("unit", () => {
   });
 
   test("Exported names must be sane", () => {
-    let specifier = new Shift.ExportSpecifier({name: ID, exportedName: "if"});
+    let specifier = new Shift.ExportFromSpecifier({name: ID, exportedName: "if"});
     let exportFrom = new Shift.ExportFrom({namedExports: [specifier], moduleSpecifier: "if"});
     let module = new Shift.Module({directives: [], items: [exportFrom]});
     valid(module);
@@ -185,6 +175,16 @@ suite("unit", () => {
     invalid(1, module);
 
     specifier.name = ID;
+    specifier.exportedName = "%";
+    invalid(1, module);
+  });
+
+  test("Exported local names must be sane", () => {
+    let specifier = new Shift.ExportLocalSpecifier({name: IE, exportedName: "if"});
+    let exportFrom = new Shift.ExportLocals({namedExports: [specifier]});
+    let module = new Shift.Module({directives: [], items: [exportFrom]});
+    valid(module);
+
     specifier.exportedName = "%";
     invalid(1, module);
   });
@@ -217,24 +217,6 @@ suite("unit", () => {
     invalidStmt(1, forof);
   });
 
-  test("FormalParameters bindings must not be member expressions", () => {
-    let binding = new Shift.BindingIdentifier({name: ID});
-    let params = new Shift.FormalParameters({items: [binding], rest: BI});
-    let stmt = new Shift.FunctionDeclaration({params, name: BI, isGenerator: false, body: new Shift.FunctionBody({directives: [], statements: []})});
-    validStmt(stmt);
-
-    binding = new Shift.ComputedMemberExpression({object: EXPR, expression: EXPR});
-    params.items = [binding];
-    invalidStmt(1, stmt);
-
-    binding = new Shift.BindingWithDefault({binding, init: EXPR});
-    params.items = [binding];
-    invalidStmt(1, stmt);
-
-    binding.binding = BI;
-    validStmt(stmt);    
-  });
-
   test("Imported names must be sane", () => {
     let specifier = new Shift.ImportSpecifier({name: ID, binding: BI});
     let module = new Shift.Module({directives: [], items: [new Shift.Import({moduleSpecifier: ID, defaultBinding: null, namedImports: [specifier]})]});
@@ -242,18 +224,6 @@ suite("unit", () => {
 
     specifier.name = "1";
     invalid(1, module);
-  });
-
-  test("Shorthand property names must be identifier names", () => {
-    let property = new Shift.ShorthandProperty({name: ID});
-    let expr = new Shift.ObjectExpression({properties: [property]});
-    validExpr(expr);
-
-    property.name = "1";
-    invalidExpr(1, expr);
-
-    property.name = "a^";
-    invalidExpr(1, expr);
   });
 
   test("Static property names must be identifiers", () => {
@@ -324,18 +294,6 @@ suite("unit", () => {
     validStmt(stmt);
 
     declarator.init = null;
-    invalidStmt(1, stmt);
-  });
-
-  test("VariableDeclarator bindings must not be member expressions", () => {
-    let binding = new Shift.BindingIdentifier({name: ID});
-    let declarator = new Shift.VariableDeclarator({binding, init: null});
-    let declaration = new Shift.VariableDeclaration({kind: "let", declarators: [declarator]});
-    let stmt = new Shift.VariableDeclarationStatement({declaration});
-    validStmt(stmt);
-
-    binding = new Shift.ComputedMemberExpression({object: EXPR, expression: EXPR});
-    declarator.binding = binding;
     invalidStmt(1, stmt);
   });
 

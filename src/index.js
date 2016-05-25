@@ -95,10 +95,6 @@ function isValidRegex(pattern, flags) {
   return true; // TODO fix this when pattern-acceptor is fixed
 }
 
-function isMemberExpression(binding) {
-  return binding.type == 'ComputedMemberExpression' || binding.type == 'StaticMemberExpression';
-}
-
 function isTemplateElement(rawValue) {
   try {
     let tokenizer = new Tokenizer('`' + rawValue + '`');
@@ -139,6 +135,14 @@ export class Validator extends MonoidalReducer {
     return reduce(new Validator, node).errors;
   }
 
+  reduceAssignmentTargetIdentifier(node) {
+    let s = super.reduceAssignmentTargetIdentifier(node);
+    if (!isValidIdentifierName(node.name)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_BINDING_IDENTIFIER_NAME));
+    }
+    return s;
+  }
+
   reduceBindingIdentifier(node) {
     let s = super.reduceBindingIdentifier(node);
     if (!isValidIdentifierName(node.name)) {
@@ -156,14 +160,6 @@ export class Validator extends MonoidalReducer {
     let s = super.reduceBreakStatement(node);
     if (node.label !== null && !isValidIdentifierName(node.label)) {
       s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_BREAK_STATEMENT_LABEL));
-    }
-    return s;
-  }
-
-  reduceCatchClause(node, {binding, body}) {
-    let s = super.reduceCatchClause(node, {binding, body});
-    if (isMemberExpression(node.binding)) {
-      s = s.addError(new ValidationError(node, ValidationErrorMessages.CATCH_CLAUSE_BINDING_NOT_MEMBER_EXPRESSION));
     }
     return s;
   }
@@ -192,12 +188,20 @@ export class Validator extends MonoidalReducer {
     return s;
   }
 
-  reduceExportSpecifier(node) {
-    let s = super.reduceExportSpecifier(node);
-    if (node.name !== null && !isValidIdentifierName(node.name)) {
+  reduceExportFromSpecifier(node) {
+    let s = super.reduceExportFromSpecifier(node);
+    if (!isValidIdentifierName(node.name)) {
       s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_EXPORT_SPECIFIER_NAME));
     }
-    if (!isIdentifierNameES6(node.exportedName)) {
+    if (node.exportedName !== null && !isIdentifierNameES6(node.exportedName)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_EXPORTED_NAME));
+    }
+    return s;
+  }
+
+  reduceExportLocalSpecifier(node, {name}) {
+    let s = super.reduceExportLocalSpecifier(node, {name});
+    if (node.exportedName !== null && !isIdentifierNameES6(node.exportedName)) {
       s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_EXPORTED_NAME));
     }
     return s;
@@ -226,20 +230,6 @@ export class Validator extends MonoidalReducer {
         s = s.addError(new ValidationError(node, ValidationErrorMessages.NO_INIT_IN_VARIABLE_DECLARATOR_IN_FOR_OF));
       }
     }
-    return s;
-  }
-
-  reduceFormalParameters(node, {items, rest}) {
-    let s = super.reduceFormalParameters(node, {items, rest});
-    node.items.forEach(x => {
-      if (isMemberExpression(x)) {
-        s = s.addError(new ValidationError(node, ValidationErrorMessages.FORMAL_PARAMETER_ITEMS_NOT_MEMBER_EXPRESSION));
-      } else if (x.type === 'BindingWithDefault') {
-        if (isMemberExpression(x.binding)) {
-          s = s.addError(new ValidationError(node, ValidationErrorMessages.FORMAL_PARAMETER_ITEMS_BINDING_NOT_MEMBER_EXPRESSION));
-        }
-      }
-    });
     return s;
   }
 
@@ -336,7 +326,6 @@ export class Validator extends MonoidalReducer {
     s = s.enforceBindingIdentifiersCalledDefault();
     s = s.enforceYieldExpressionsNotInGeneratorContext();
     s = s.enforceYieldGeneratorExpressionsNotInGeneratorContext();
-    // s.errors.forEach(console.log.bind(console))
     return s;
   }
 
@@ -352,27 +341,6 @@ export class Validator extends MonoidalReducer {
     s = s.enforceBindingIdentifiersCalledDefault();
     s = s.enforceYieldExpressionsNotInGeneratorContext();
     s = s.enforceYieldGeneratorExpressionsNotInGeneratorContext();
-    // s.errors.forEach(console.log.bind(console))
-    return s;
-  }
-
-  reduceSetter(node, {name, param, body}) {
-    let s = super.reduceSetter(node, {name, param, body});
-    if (isMemberExpression(node.param)) {
-      s = s.addError(new ValidationError(node, ValidationErrorMessages.SETTER_PARAM_NOT_MEMBER_EXPRESSION));
-    } else if (node.param.type === 'BindingWithDefault') {
-      if (isMemberExpression(node.param).binding) {
-        s = s.addError(new ValidationError(node, ValidationErrorMessages.SETTER_PARAM_BINDING_NOT_MEMBER_EXPRESSION));
-      }
-    }
-    return s;
-  }
-
-  reduceShorthandProperty(node) {
-    let s = super.reduceShorthandProperty(node);
-    if (!isValidIdentifierName(node.name)) {
-      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_SHORTHAND_PROPERTY_NAME));
-    }
     return s;
   }
 
@@ -430,14 +398,6 @@ export class Validator extends MonoidalReducer {
           s = s.addError(new ValidationError(node, ValidationErrorMessages.CONST_VARIABLE_DECLARATION_MUST_HAVE_INIT));
         }
       });
-    }
-    return s;
-  }
-
-  reduceVariableDeclarator(node, {binding, init}) {
-    let s = super.reduceVariableDeclarator(node, {binding, init});
-    if (isMemberExpression(node.binding)) {
-      s = s.addError(new ValidationError(node, ValidationErrorMessages.VARIABLE_DECLARATION_BINDING_NOT_MEMBER_EXPRESSION));
     }
     return s;
   }
