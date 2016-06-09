@@ -43,5 +43,7 @@ export default {
   VALID_TEMPLATE_ELEMENT_VALUE: "The raw value field of TemplateElement must match the ES6 grammar production TemplateCharacters",
   ALTERNATING_TEMPLATE_EXPRESSION_ELEMENTS: "The elements field of TemplateExpression must be an alternating list of TemplateElement and Expression, starting and ending with a TemplateElement",
   NOT_EMPTY_VARIABLE_DECLARATORS_LIST: "The declarators field in VariableDeclaration must not be an empty list",
-  CONST_VARIABLE_DECLARATION_MUST_HAVE_INIT: "VariableDeclarationStatements with a VariableDeclaration of kind CONST cannot have a VariableDeclarator with no initializer",
+  CONST_VARIABLE_DECLARATION_MUST_HAVE_INIT: "VariableDeclarationStatements with a VariableDeclaration of kind const cannot have a VariableDeclarator with no initializer",
+  FUNCTION_DECLARATION_AS_STATEMENT: "Function declarations may not be the body of a WithStatement or loop",
+  PROPER_DECLARATION_AS_STATEMENT: "Class, generator function, and let/const declarations may not be the consequent or alternate of an IfStatement or the body of a LabeledStatement, WithStatement, or loop",
 };

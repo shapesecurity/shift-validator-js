@@ -126,6 +126,15 @@ function isDirective(rawValue) {
   return stringify('"') || stringify("'");
 }
 
+function checkIllegalBody(node, s, {allowFunctions = false} = {}) {
+  if (node.body.type === 'FunctionDeclaration' && !allowFunctions) {
+    return s.addError(new ValidationError(node, ValidationErrorMessages.FUNCTION_DECLARATION_AS_STATEMENT));
+  } else if (node.body.type === 'ClassDeclaration' || node.body.type === 'FunctionDeclaration' && node.body.isGenerator || node.body.type === 'VariableDeclarationStatement' && (node.body.declaration.kind === 'let' || node.body.declaration.kind === 'const')) {
+    return s.addError(new ValidationError(node, ValidationErrorMessages.PROPER_DECLARATION_AS_STATEMENT));
+  }
+  return s;
+}
+
 export class Validator extends MonoidalReducer {
   constructor() {
     super(ValidationContext);
@@ -177,6 +186,12 @@ export class Validator extends MonoidalReducer {
     return s;
   }
 
+  reduceDoWhileStatement(node, {body, test}) {
+    let s = super.reduceDoWhileStatement(node, {body, test});
+    s = checkIllegalBody(node, s);
+    return s;
+  }
+
   reduceDirective(node) {
     let s = super.reduceDirective(node);
     if (!isDirective(node.rawValue)) {
@@ -222,6 +237,7 @@ export class Validator extends MonoidalReducer {
         s = s.addError(new ValidationError(node, ValidationErrorMessages.NO_INIT_IN_VARIABLE_DECLARATOR_IN_FOR_IN));
       }
     }
+    s = checkIllegalBody(node, s);
     return s;
   }
 
@@ -235,6 +251,13 @@ export class Validator extends MonoidalReducer {
         s = s.addError(new ValidationError(node, ValidationErrorMessages.NO_INIT_IN_VARIABLE_DECLARATOR_IN_FOR_OF));
       }
     }
+    s = checkIllegalBody(node, s);
+    return s;
+  }
+
+  reduceForStatement(node, {init, update, test, body}) {
+    let s = super.reduceForStatement(node, {init, update, test, body});
+    s = checkIllegalBody(node, s);
     return s;
   }
 
@@ -280,6 +303,12 @@ export class Validator extends MonoidalReducer {
     if (isProblematicIfStatement(node)) {
       s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_IF_STATEMENT));
     }
+    if (node.consequent.type === 'ClassDeclaration' || node.consequent.type === 'FunctionDeclaration' && node.consequent.isGenerator || node.consequent.type === 'VariableDeclarationStatement' && (node.consequent.declaration.kind === 'let' || node.consequent.declaration.kind === 'const')) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.PROPER_DECLARATION_AS_STATEMENT));
+    }
+    if (node.alternate && (node.alternate.type === 'ClassDeclaration' || node.alternate.type === 'FunctionDeclaration' && node.alternate.isGenerator || node.alternate.type === 'VariableDeclarationStatement' && (node.alternate.declaration.kind === 'let' || node.alternate.declaration.kind === 'const'))) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.PROPER_DECLARATION_AS_STATEMENT));
+    }
     return s;
   }
 
@@ -296,6 +325,7 @@ export class Validator extends MonoidalReducer {
     if (!isValidIdentifierName(node.label)) {
       s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_LABEL));
     }
+    s = checkIllegalBody(node, s, {allowFunctions: true});
     return s;
   }
 
@@ -409,6 +439,18 @@ export class Validator extends MonoidalReducer {
         }
       });
     }
+    return s;
+  }
+
+  reduceWhileStatement(node, {test, body}) {
+    let s = super.reduceWhileStatement(node, {test, body});
+    s = checkIllegalBody(node, s);
+    return s;
+  }
+
+  reduceWithStatement(node, {object, body}) {
+    let s = super.reduceWithStatement(node, {object, body});
+    s = checkIllegalBody(node, s);
     return s;
   }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import * as Shift from "shift-ast"
+import * as Shift from "shift-ast/checked"
 
 import {validStmt, invalidStmt, validExpr, invalidExpr, valid, invalid, wrapIter, exprStmt, label, block, BLOCK, ATI, BI, IE, ID, STMT, EXPR} from "./helpers"
 
@@ -435,4 +435,49 @@ suite("unit", () => {
     nested[0] = new Shift.ObjectExpression({properties: [new Shift.Setter({name: new Shift.StaticPropertyName({value: ID}), param: BI, body: yieldBody})]});
     invalidStmt(1, outer);
   });
+
+  test("Declarations as statements", () => {
+    let decl = new Shift.FunctionDeclaration({name: BI, isGenerator: true, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})});
+
+    invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: decl, alternate: STMT}));
+    invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: STMT, alternate: decl}));
+    invalidStmt(1, new Shift.LabeledStatement({label: "a", body: decl}));
+
+    decl.isGenerator = false;
+
+    validStmt(new Shift.IfStatement({test: EXPR, consequent: decl, alternate: STMT}));
+    validStmt(new Shift.IfStatement({test: EXPR, consequent: STMT, alternate: decl}));
+    validStmt(new Shift.LabeledStatement({label: "a", body: decl}));
+    invalidStmt(1, new Shift.DoWhileStatement({body: decl, test: EXPR}));
+    invalidStmt(1, new Shift.ForInStatement({left: ATI, right: EXPR, body: decl}));
+    invalidStmt(1, new Shift.ForOfStatement({left: ATI, right: EXPR, body: decl}));
+    invalidStmt(1, new Shift.ForStatement({init: EXPR, test: EXPR, update: EXPR, body: decl}));
+    invalidStmt(1, new Shift.WhileStatement({test: EXPR, body: decl}));
+    invalidStmt(1, new Shift.WithStatement({object: EXPR, body: decl}));
+
+    decl = new Shift.ClassDeclaration({name: BI, super: null, elements: []});
+
+    invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: decl, alternate: STMT}));
+    invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: STMT, alternate: decl}));
+    invalidStmt(1, new Shift.DoWhileStatement({body: decl, test: EXPR}));
+    invalidStmt(1, new Shift.ForInStatement({left: ATI, right: EXPR, body: decl}));
+    invalidStmt(1, new Shift.ForOfStatement({left: ATI, right: EXPR, body: decl}));
+    invalidStmt(1, new Shift.ForStatement({init: EXPR, test: EXPR, update: EXPR, body: decl}));
+    invalidStmt(1, new Shift.WhileStatement({test: EXPR, body: decl}));
+    invalidStmt(1, new Shift.WithStatement({object: EXPR, body: decl}));
+    invalidStmt(1, new Shift.LabeledStatement({label: "a", body: decl}));
+
+    decl = new Shift.VariableDeclarationStatement({declaration: new Shift.VariableDeclaration({kind: "let", declarators: [new Shift.VariableDeclarator({binding: BI, init: null})]})});
+
+    invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: decl, alternate: STMT}));
+    invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: STMT, alternate: decl}));
+    invalidStmt(1, new Shift.DoWhileStatement({body: decl, test: EXPR}));
+    invalidStmt(1, new Shift.ForInStatement({left: ATI, right: EXPR, body: decl}));
+    invalidStmt(1, new Shift.ForOfStatement({left: ATI, right: EXPR, body: decl}));
+    invalidStmt(1, new Shift.ForStatement({init: EXPR, test: EXPR, update: EXPR, body: decl}));
+    invalidStmt(1, new Shift.WhileStatement({test: EXPR, body: decl}));
+    invalidStmt(1, new Shift.WithStatement({object: EXPR, body: decl}));
+    invalidStmt(1, new Shift.LabeledStatement({label: "a", body: decl}));
+  });
+
 });
