@@ -73,9 +73,8 @@ function isProblematicIfStatement(node) {
   return false;
 }
 
-function isValidIdentifierName(name) {
+function isValidIdentifier(name) {
   return name === 'let' || name === 'yield' || name === 'enum' || isIdentifierNameES6(name) && !isReservedWordES6(name);
-  //return name.length > 0 && isIdentifierStart(name.charCodeAt(0)) && Array.prototype.every.call(name, c => isIdentifierPart(c.charCodeAt(0)));
   if (name.length === 0) {
     return false;
   }
@@ -85,6 +84,10 @@ function isValidIdentifierName(name) {
   } catch(e) {
     return false;
   }
+}
+
+function isValidIdentifierName(name) {
+  return name.length > 0 && isIdentifierStart(name.charCodeAt(0)) && Array.prototype.every.call(name, c => isIdentifierPart(c.charCodeAt(0)));
 }
 
 function isValidStaticPropertyName(name) {
@@ -151,7 +154,7 @@ export class Validator extends MonoidalReducer {
 
   reduceAssignmentTargetIdentifier(node) {
     let s = super.reduceAssignmentTargetIdentifier(node);
-    if (!isValidIdentifierName(node.name)) {
+    if (!isValidIdentifier(node.name)) {
       s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_BINDING_IDENTIFIER_NAME));
     }
     return s;
@@ -159,7 +162,7 @@ export class Validator extends MonoidalReducer {
 
   reduceBindingIdentifier(node) {
     let s = super.reduceBindingIdentifier(node);
-    if (!isValidIdentifierName(node.name)) {
+    if (!isValidIdentifier(node.name)) {
       if (node.name == "*default*") {
         s = s.addBindingIdentifierCalledDefault(node);
       }
@@ -172,7 +175,7 @@ export class Validator extends MonoidalReducer {
 
   reduceBreakStatement(node) {
     let s = super.reduceBreakStatement(node);
-    if (node.label !== null && !isValidIdentifierName(node.label)) {
+    if (node.label !== null && !isValidIdentifier(node.label)) {
       s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_BREAK_STATEMENT_LABEL));
     }
     return s;
@@ -180,7 +183,7 @@ export class Validator extends MonoidalReducer {
 
   reduceContinueStatement(node) {
     let s = super.reduceContinueStatement(node);
-    if (node.label !== null && !isValidIdentifierName(node.label)) {
+    if (node.label !== null && !isValidIdentifier(node.label)) {
       s = s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_CONTINUE_STATEMENT_LABEL));
     }
     return s;
@@ -213,7 +216,7 @@ export class Validator extends MonoidalReducer {
     if (!isValidIdentifierName(node.name)) {
       s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_EXPORT_SPECIFIER_NAME));
     }
-    if (node.exportedName !== null && !isIdentifierNameES6(node.exportedName)) {
+    if (node.exportedName !== null && !isValidIdentifierName(node.exportedName)) {
       s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_EXPORTED_NAME));
     }
     return s;
@@ -292,7 +295,7 @@ export class Validator extends MonoidalReducer {
 
   reduceIdentifierExpression(node) {
     let s = super.reduceIdentifierExpression(node);
-    if (!isValidIdentifierName(node.name)) {
+    if (!isValidIdentifier(node.name)) {
         s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_IDENTIFIER_NAME));
     }
     return s;
@@ -322,7 +325,7 @@ export class Validator extends MonoidalReducer {
 
   reduceLabeledStatement(node, {body}) {
     let s = super.reduceLabeledStatement(node, {body});
-    if (!isValidIdentifierName(node.label)) {
+    if (!isValidIdentifier(node.label)) {
       s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_LABEL));
     }
     s = checkIllegalBody(node, s, {allowFunctions: true});

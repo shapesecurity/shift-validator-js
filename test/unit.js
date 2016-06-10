@@ -166,7 +166,7 @@ suite("unit", () => {
   });
 
   test("Exported names must be sane", () => {
-    let specifier = new Shift.ExportFromSpecifier({name: ID, exportedName: "if"});
+    let specifier = new Shift.ExportFromSpecifier({name: "if", exportedName: "if"});
     let exportFrom = new Shift.ExportFrom({namedExports: [specifier], moduleSpecifier: "if"});
     let module = new Shift.Module({directives: [], items: [exportFrom]});
     valid(module);
