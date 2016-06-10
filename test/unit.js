@@ -137,12 +137,12 @@ suite("unit", () => {
 
   test("Labels must be valid identifier names", () => {
     validStmt(new Shift.LabeledStatement({label: ID, body: new Shift.WhileStatement({test: EXPR, body: new Shift.BlockStatement({block: new Shift.Block({statements: [new Shift.BreakStatement({label: ID})]})})})}));
-    invalidStmt(1, new Shift.LabeledStatement({label: ID, body: new Shift.WhileStatement({test: EXPR, body: new Shift.BlockStatement({block: new Shift.Block({statements: [new Shift.BreakStatement({label: "1"})]})})})}));
-    invalidStmt(1, new Shift.LabeledStatement({label: "1", body: new Shift.WhileStatement({test: EXPR, body: new Shift.BlockStatement({block: new Shift.Block({statements: [new Shift.BreakStatement({label: ID})]})})})}));
+    invalidStmt(2, new Shift.LabeledStatement({label: ID, body: new Shift.WhileStatement({test: EXPR, body: new Shift.BlockStatement({block: new Shift.Block({statements: [new Shift.BreakStatement({label: "1"})]})})})}));
+    invalidStmt(2, new Shift.LabeledStatement({label: "1", body: new Shift.WhileStatement({test: EXPR, body: new Shift.BlockStatement({block: new Shift.Block({statements: [new Shift.BreakStatement({label: ID})]})})})}));
     invalidStmt(2, new Shift.LabeledStatement({label: "1", body: new Shift.WhileStatement({test: EXPR, body: new Shift.BlockStatement({block: new Shift.Block({statements: [new Shift.BreakStatement({label: "1"})]})})})}));
 
     validStmt(new Shift.LabeledStatement({label: ID, body: new Shift.WhileStatement({test: EXPR, body: new Shift.BlockStatement({block: new Shift.Block({statements: [new Shift.ContinueStatement({label: ID})]})})})}));
-    invalidStmt(1, new Shift.LabeledStatement({label: ID, body: new Shift.WhileStatement({test: EXPR, body: new Shift.BlockStatement({block: new Shift.Block({statements: [new Shift.ContinueStatement({label: "1"})]})})})}));
+    invalidStmt(2, new Shift.LabeledStatement({label: ID, body: new Shift.WhileStatement({test: EXPR, body: new Shift.BlockStatement({block: new Shift.Block({statements: [new Shift.ContinueStatement({label: "1"})]})})})}));
   });
 
   test("Directive must be a string literal", () => {
@@ -182,7 +182,8 @@ suite("unit", () => {
   test("Exported local names must be sane", () => {
     let specifier = new Shift.ExportLocalSpecifier({name: IE, exportedName: "if"});
     let exportFrom = new Shift.ExportLocals({namedExports: [specifier]});
-    let module = new Shift.Module({directives: [], items: [exportFrom]});
+    let decl = new Shift.VariableDeclarationStatement({declaration: new Shift.VariableDeclaration({kind: "var", declarators: [new Shift.VariableDeclarator({binding: BI, init: null})]})});
+    let module = new Shift.Module({directives: [], items: [exportFrom, decl]});
     valid(module);
 
     specifier.exportedName = "%";
@@ -191,7 +192,7 @@ suite("unit", () => {
 
   test("ForIn variable declarator must be sane", () => {
     let declarator = new Shift.VariableDeclarator({binding: BI, init: null});
-    let declaration = new Shift.VariableDeclaration({kind: "const", declarators: [declarator]});
+    let declaration = new Shift.VariableDeclaration({kind: "var", declarators: [declarator]});
     let forin = new Shift.ForInStatement({left: declaration, right: EXPR, body: STMT});
     validStmt(forin);
 
@@ -205,7 +206,7 @@ suite("unit", () => {
 
   test("ForOf variable declarator must be sane", () => {
     let declarator = new Shift.VariableDeclarator({binding: BI, init: null});
-    let declaration = new Shift.VariableDeclaration({kind: "const", declarators: [declarator]});
+    let declaration = new Shift.VariableDeclaration({kind: "var", declarators: [declarator]});
     let forof = new Shift.ForOfStatement({left: declaration, right: EXPR, body: STMT});
     validStmt(forof);
 
@@ -279,7 +280,7 @@ suite("unit", () => {
 
   test("VariableDeclarations must declare something", () => {
     let declarator = new Shift.VariableDeclarator({binding: BI, init: null});
-    let declaration = new Shift.VariableDeclaration({kind: "let", declarators: [declarator, declarator]});
+    let declaration = new Shift.VariableDeclaration({kind: "var", declarators: [declarator, declarator]});
     let stmt = new Shift.VariableDeclarationStatement({declaration});
     validStmt(stmt);
 
@@ -385,11 +386,11 @@ suite("unit", () => {
     validExpr(fnExpr);
 
     params.items[0].init = yieldExpr;
-    invalidExpr(1, fnExpr);
+    invalidExpr(2, fnExpr);
 
     params.items[0].init = new Shift.LiteralNullExpression;
     arrow.body = yieldExpr;
-    invalidExpr(1, fnExpr);
+    invalidExpr(2, fnExpr);
   });
 
   test("Yield must not be the computed name of a generator method outside of a generator context", () => {
@@ -478,6 +479,13 @@ suite("unit", () => {
     invalidStmt(1, new Shift.WhileStatement({test: EXPR, body: decl}));
     invalidStmt(1, new Shift.WithStatement({object: EXPR, body: decl}));
     invalidStmt(1, new Shift.LabeledStatement({label: "a", body: decl}));
+  });
+
+  test("Identifier names", () => {
+    let identifier = new Shift.IdentifierExpression({name: "enum"});
+    validExpr(identifier);
+    identifier.name = "await";
+    validExpr(identifier);
   });
 
 });

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {Tokenizer, TokenType} from "shift-parser";
+import {EarlyErrorChecker, Tokenizer, TokenType} from "shift-parser";
 import reduce, {MonoidalReducer} from "shift-reducer";
 import {keyword, code} from "esutils";
 const {isIdentifierNameES6, isReservedWordES6} = keyword;
@@ -74,7 +74,7 @@ function isProblematicIfStatement(node) {
 }
 
 function isValidIdentifierName(name) {
-  return name === 'let' || name == 'yield' || isIdentifierNameES6(name) && !isReservedWordES6(name);
+  return name === 'let' || name === 'yield' || name === 'enum' || isIdentifierNameES6(name) && !isReservedWordES6(name);
   //return name.length > 0 && isIdentifierStart(name.charCodeAt(0)) && Array.prototype.every.call(name, c => isIdentifierPart(c.charCodeAt(0)));
   if (name.length === 0) {
     return false;
@@ -141,7 +141,7 @@ export class Validator extends MonoidalReducer {
   }
 
   static validate(node) {
-    return reduce(new Validator, node).errors;
+    return reduce(new Validator, node).errors.concat(EarlyErrorChecker.check(node));
   }
 
   reduceArrowExpression(node, {params, body}) {
@@ -426,18 +426,6 @@ export class Validator extends MonoidalReducer {
     let s = super.reduceVariableDeclaration(node, {declarators});
     if (node.declarators.length == 0) {
       s = s.addError(new ValidationError(node, ValidationErrorMessages.NOT_EMPTY_VARIABLE_DECLARATORS_LIST));
-    }
-    return s;
-  }
-
-  reduceVariableDeclarationStatement(node, {declaration}) {
-    let s = super.reduceVariableDeclarationStatement(node, {declaration});
-    if (node.declaration.kind === 'const') {
-      node.declaration.declarators.forEach(x => {
-        if (x.init === null) {
-          s = s.addError(new ValidationError(node, ValidationErrorMessages.CONST_VARIABLE_DECLARATION_MUST_HAVE_INIT));
-        }
-      });
     }
     return s;
   }

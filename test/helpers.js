@@ -21,7 +21,7 @@ import isValid, {Validator} from "../";
 
 export function assertValid(errs) {
   if (errs.length > 0) {
-    errs.forEach((err) => console.error(err.message, JSON.toString(err.node)));
+    errs.forEach((err) => console.error(err.message, JSON.stringify(err.node)));
   }
   assert.equal(0, errs.length);
 }
@@ -37,7 +37,7 @@ export function invalidStmt(numExpectedErrors, stmt) {
   assert(!isValid(script));
   let errs = Validator.validate(script);
   if (errs.length != numExpectedErrors) {
-    errs.forEach((err) => console.error(err.message, JSON.toString(err.node)));
+    errs.forEach((err) => console.error(err.message, JSON.stringify(err.node)));
   }
   assert.notEqual(errs.length, 0, "statement should have errors");
   assert.equal(errs.length, numExpectedErrors);
@@ -54,6 +54,9 @@ export function invalidExpr(numExpectedErrors, expr) {
   assert(!isValid(script));
   let errs = Validator.validate(script);
   assert.notEqual(errs.length, 0, "expression should have errors");
+  if (errs.length != numExpectedErrors) {
+    errs.forEach((err) => console.error(err.message, JSON.stringify(err.node)));
+  }
   assert.equal(errs.length, numExpectedErrors);
 }
 
