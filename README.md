@@ -15,6 +15,10 @@ distinguishes valid Shift format ASTs from invalid ones.
 
 [Stable](http://nodejs.org/api/documentation.html#documentation_stability_index).
 
+## Note on IfStatements
+
+Most of the ways in which a well-typed AST can fail to be valid are clear from the grammar or spec. One special case is worth calling attention to: an IfStatement with an alternate nested inside the consequent of an IfStatement that lacks an alternate is not valid. No possible source text can produce this AST.
+
 
 ## Installation
 
