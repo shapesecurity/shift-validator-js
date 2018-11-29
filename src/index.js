@@ -17,6 +17,9 @@
 import {EarlyErrorChecker, Tokenizer, TokenType} from "shift-parser";
 import reduce, {MonoidalReducer} from "shift-reducer";
 import {keyword, code} from "esutils";
+
+import acceptRegex from "shift-regexp-acceptor";
+
 const {isIdentifierNameES6, isReservedWordES6} = keyword;
 const {isIdentifierStartES6: isIdentifierStart, isIdentifierPartES6: isIdentifierPart} = code;
 
@@ -95,7 +98,7 @@ function isValidStaticPropertyName(name) {
 }
 
 function isValidRegex(pattern, flags) {
-  return true; // TODO fix this when pattern-acceptor is fixed
+  return acceptRegex(pattern, flags);
 }
 
 function isTemplateElement(rawValue) {
