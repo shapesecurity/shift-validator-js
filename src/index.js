@@ -18,7 +18,7 @@ import {EarlyErrorChecker, Tokenizer, TokenType} from "shift-parser";
 import reduce, {MonoidalReducer} from "shift-reducer";
 import {keyword, code} from "esutils";
 
-import acceptRegex from "shift-regexp-acceptor";
+import isValidRegex from "shift-regexp-acceptor";
 
 const {isIdentifierNameES6, isReservedWordES6} = keyword;
 const {isIdentifierStartES6: isIdentifierStart, isIdentifierPartES6: isIdentifierPart} = code;
@@ -95,10 +95,6 @@ function isValidIdentifierName(name) {
 
 function isValidStaticPropertyName(name) {
   return isIdentifierNameES6(name);
-}
-
-function isValidRegex(pattern, flags) {
-  return acceptRegex(pattern, flags);
 }
 
 function isTemplateElement(rawValue) {
@@ -351,7 +347,7 @@ export class Validator extends MonoidalReducer {
 
   reduceLiteralRegExpExpression(node) {
     let s = super.reduceLiteralRegExpExpression(node);
-    if (!isValidRegex(node.pattern, node.flags)) {
+    if (!isValidRegex(node.pattern, { unicode: node.unicode })) {
       s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_REG_EX_PATTERN));
     }
     return s;

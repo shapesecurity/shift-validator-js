@@ -29,7 +29,9 @@ suite("unit", () => {
     validExpr(new Shift.LiteralRegExpExpression({pattern: "", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
     validExpr(new Shift.LiteralRegExpExpression({pattern: "", global: true, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
     invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "[", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "]", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: true}));
     invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "(", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "]", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: true}));
     invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: ")", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
   });
 
