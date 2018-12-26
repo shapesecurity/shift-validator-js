@@ -31,8 +31,8 @@ suite("unit", () => {
     invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "[", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
     invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "]", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: true}));
     invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "(", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
-    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "]", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: true}));
-    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: ")", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: ")", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: true}));
+    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "(", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
   });
 
   test("Identifier name member must be a valid IdentifierName", () => {
