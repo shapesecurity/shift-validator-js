@@ -22,12 +22,14 @@ export class ValidationContext {
     freeReturnStatements = [],
     bindingIdentifiersCalledDefault = [],
     yieldExpressionsNotInGeneratorContext = [],
+    awaitExpressionsNotInAsyncContext = [],
     yieldGeneratorExpressionsNotInGeneratorContext = []
   } = {}) {
     this.errors = errors;
     this.freeReturnStatements = freeReturnStatements;
     this.bindingIdentifiersCalledDefault = bindingIdentifiersCalledDefault;
     this.yieldExpressionsNotInGeneratorContext = yieldExpressionsNotInGeneratorContext;
+    this.awaitExpressionsNotInAsyncContext = awaitExpressionsNotInAsyncContext;
     this.yieldGeneratorExpressionsNotInGeneratorContext = yieldGeneratorExpressionsNotInGeneratorContext;
   }
 
@@ -41,6 +43,7 @@ export class ValidationContext {
       freeReturnStatements: this.freeReturnStatements.concat(b.freeReturnStatements),
       bindingIdentifiersCalledDefault: this.bindingIdentifiersCalledDefault.concat(b.bindingIdentifiersCalledDefault),
       yieldExpressionsNotInGeneratorContext: this.yieldExpressionsNotInGeneratorContext.concat(b.yieldExpressionsNotInGeneratorContext),
+      awaitExpressionsNotInAsyncContext: this.awaitExpressionsNotInAsyncContext.concat(b.awaitExpressionsNotInAsyncContext),
       yieldGeneratorExpressionsNotInGeneratorContext: this.yieldGeneratorExpressionsNotInGeneratorContext.concat(b.yieldGeneratorExpressionsNotInGeneratorContext)
     });
   }
@@ -99,6 +102,12 @@ export class ValidationContext {
     return s;
   }
 
+  addAwaitExpressionNotInAsyncContext(e) {
+    let s = new ValidationContext(this);
+    s.awaitExpressionsNotInAsyncContext = s.awaitExpressionsNotInAsyncContext.concat([e]);
+    return s;
+  }
+
   enforceYieldExpressionsNotInGeneratorContext() {
     let errors = [];
     this.yieldExpressionsNotInGeneratorContext.forEach(r => errors.push(new ValidationError(r, ValidationErrorMessages.VALID_YIELD_EXPRESSION_POSITION)));
@@ -108,9 +117,24 @@ export class ValidationContext {
     return s;
   }
 
+  enforceAwaitExpressionsNotInAsyncContext() {
+    let errors = [];
+    this.awaitExpressionsNotInAsyncContext.forEach(r => errors.push(new ValidationError(r, ValidationErrorMessages.VALID_AWAIT_EXPRESSION_POSITION)));
+    let s = new ValidationContext(this);
+    s.errors = s.errors.concat(errors);
+    s.awaitExpressionsNotInAsyncContext = [];
+    return s;
+  }
+
   clearYieldExpressionsNotInGeneratorContext() {
     let s = new ValidationContext(this);
     s.yieldExpressionsNotInGeneratorContext = [];
+    return s;
+  }
+
+  clearAwaitExpressionsNotInAsyncContext() {
+    let s = new ValidationContext(this);
+    s.awaitExpressionsNotInAsyncContext = [];
     return s;
   }
 

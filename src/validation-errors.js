@@ -38,6 +38,7 @@ export default {
   RETURN_STATEMENT_IN_FUNCTION_BODY: "ReturnStatement must be within a FunctionBody",
   BINDING_IDENTIFIERS_CALLED_DEFAULT: "BindingIdentifier may only be called \"*default*\" within a FunctionDeclaration or ClassDeclaration",
   VALID_YIELD_EXPRESSION_POSITION: "YieldExpression is only allowed within a generator function or method",
+  VALID_AWAIT_EXPRESSION_POSITION: "AwaitExpression is only allowed within a generator function or method",
   VALID_YIELD_GENERATOR_EXPRESSION_POSITION: "YieldGeneratorExpression is only allowed within a generator function or method",
   VALID_STATIC_MEMBER_EXPRESSION_PROPERTY_NAME: "The property field of StaticMemberExpression must be a valid identifier name",
   VALID_TEMPLATE_ELEMENT_VALUE: "The raw value field of TemplateElement must match the ES6 grammar production TemplateCharacters",
