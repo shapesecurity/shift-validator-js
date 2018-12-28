@@ -441,6 +441,27 @@ suite("unit", () => {
     invalidStmt(1, outer);
   });
   
+  test("Async functions must not be generators", () => {
+    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: false, isAsync: true, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})});
+    validExpr(fnExpr);
+
+    fnExpr.isGenerator = true;
+    invalidExpr(1, fnExpr);
+
+    let fnDecl = new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: true, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})});
+    validStmt(fnDecl);
+
+    fnDecl.isGenerator = true;
+    invalidStmt(1, fnDecl);
+
+    let method = new Shift.Method({name: new Shift.StaticPropertyName({value: ID}), isGenerator: false, isAsync: true, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})});
+    let objExpr = new Shift.ObjectExpression({properties: [method]});
+    validExpr(objExpr);
+
+    method.isGenerator = true;
+    invalidExpr(1, objExpr);
+  });
+
   test("Await expressions must only appear in async functions", () => {
     let awaitExpr = new Shift.AwaitExpression({expression: IE});
     let body = new Shift.FunctionBody({directives: [], statements: [new Shift.ExpressionStatement({expression: awaitExpr})]});

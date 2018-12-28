@@ -47,4 +47,5 @@ export default {
   CONST_VARIABLE_DECLARATION_MUST_HAVE_INIT: "VariableDeclarationStatements with a VariableDeclaration of kind const cannot have a VariableDeclarator with no initializer",
   FUNCTION_DECLARATION_AS_STATEMENT: "Function declarations may not be the body of a WithStatement or loop",
   PROPER_DECLARATION_AS_STATEMENT: "Class, generator function, and let/const declarations may not be the consequent or alternate of an IfStatement or the body of a LabeledStatement, WithStatement, or loop",
+  ASYNC_GENERATOR_FUNCTION: "Async functions cannot be generators",
 };
