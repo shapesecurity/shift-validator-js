@@ -38,6 +38,7 @@ export default {
   RETURN_STATEMENT_IN_FUNCTION_BODY: "ReturnStatement must be within a FunctionBody",
   BINDING_IDENTIFIERS_CALLED_DEFAULT: "BindingIdentifier may only be called \"*default*\" within a FunctionDeclaration or ClassDeclaration",
   VALID_YIELD_EXPRESSION_POSITION: "YieldExpression is only allowed within a generator function or method",
+  VALID_AWAIT_EXPRESSION_POSITION: "AwaitExpression is only allowed within an async function or method",
   VALID_YIELD_GENERATOR_EXPRESSION_POSITION: "YieldGeneratorExpression is only allowed within a generator function or method",
   VALID_STATIC_MEMBER_EXPRESSION_PROPERTY_NAME: "The property field of StaticMemberExpression must be a valid identifier name",
   VALID_TEMPLATE_ELEMENT_VALUE: "The raw value field of TemplateElement must match the ES6 grammar production TemplateCharacters",
@@ -46,4 +47,5 @@ export default {
   CONST_VARIABLE_DECLARATION_MUST_HAVE_INIT: "VariableDeclarationStatements with a VariableDeclaration of kind const cannot have a VariableDeclarator with no initializer",
   FUNCTION_DECLARATION_AS_STATEMENT: "Function declarations may not be the body of a WithStatement or loop",
   PROPER_DECLARATION_AS_STATEMENT: "Class, generator function, and let/const declarations may not be the consequent or alternate of an IfStatement or the body of a LabeledStatement, WithStatement, or loop",
+  ASYNC_GENERATOR_FUNCTION: "Async functions cannot be generators",
 };

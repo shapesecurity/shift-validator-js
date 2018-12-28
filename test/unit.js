@@ -15,6 +15,7 @@
  */
 
 import * as Shift from "shift-ast/checked"
+import isValid, {Validator} from "../";
 
 import {validStmt, invalidStmt, validExpr, invalidExpr, valid, invalid, wrapIter, exprStmt, label, block, BLOCK, ATI, BI, IE, ID, STMT, EXPR} from "./helpers"
 
@@ -51,7 +52,7 @@ suite("unit", () => {
     invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: "a-b"}));
   });
 
-  test("IdentifierExpression must not contain Identifier with reserved word name other than let and yield", () => {
+  test("IdentifierExpression must not contain Identifier with reserved word name other than let, yield, await, and async", () => {
     validExpr(new Shift.IdentifierExpression({name: "varx"}));
     validExpr(new Shift.IdentifierExpression({name: "xvar"}));
     validExpr(new Shift.IdentifierExpression({name: "varif"}));
@@ -59,39 +60,41 @@ suite("unit", () => {
     validExpr(new Shift.IdentifierExpression({name: "function0"}));
     validExpr(new Shift.IdentifierExpression({name: "let"}));
     validExpr(new Shift.IdentifierExpression({name: "yield"}));
+    validExpr(new Shift.IdentifierExpression({name: "await"}));
+    validExpr(new Shift.IdentifierExpression({name: "async"}));
     invalidExpr(1, new Shift.IdentifierExpression({name: "if"}));
     invalidExpr(1, new Shift.IdentifierExpression({name: "var"}));
     invalidExpr(1, new Shift.IdentifierExpression({name: "function"}));
   });
 
-  test("FunctionExpression name must not be a reserved word other than let and yield", () => {
-    validExpr(new Shift.FunctionExpression({name: null, isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
-    validExpr(new Shift.FunctionExpression({name: BI, isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
-    invalidExpr(1, new Shift.FunctionExpression({name: new Shift.BindingIdentifier({name: "if"}), isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+  test("FunctionExpression name must not be a reserved word other than let, yield, await, and async", () => {
+    validExpr(new Shift.FunctionExpression({name: null, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+    validExpr(new Shift.FunctionExpression({name: BI, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+    invalidExpr(1, new Shift.FunctionExpression({name: new Shift.BindingIdentifier({name: "if"}), isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
   });
 
-  test("FunctionDeclaration name must not be a reserved word other than let and yield", () => {
-    validStmt(new Shift.FunctionDeclaration({name: BI, isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
-    invalidStmt(1, new Shift.FunctionDeclaration({name: new Shift.BindingIdentifier({name: "if"}), isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+  test("FunctionDeclaration name must not be a reserved word other than let, yield, await, and async", () => {
+    validStmt(new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+    invalidStmt(1, new Shift.FunctionDeclaration({name: new Shift.BindingIdentifier({name: "if"}), isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
   });
 
-  test("FunctionExpression parameters must not be reserved words other than let and yield", () => {
-    validExpr(new Shift.FunctionExpression({name: null, isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
-    validExpr(new Shift.FunctionExpression({name: null, isGenerator: false, params: new Shift.FormalParameters({items: [BI], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
-    invalidExpr(1, new Shift.FunctionExpression({name: null, isGenerator: false, params: new Shift.FormalParameters({items: [new Shift.BindingIdentifier({name: "if"})], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
-    invalidExpr(1, new Shift.FunctionExpression({name: null, isGenerator: false, params: new Shift.FormalParameters({items: [BI, new Shift.BindingIdentifier({name: "if"})], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
-    invalidExpr(1, new Shift.FunctionExpression({name: null, isGenerator: false, params: new Shift.FormalParameters({items: [new Shift.BindingIdentifier({name: "if"}), BI], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+  test("FunctionExpression parameters must not be reserved words other than let, yield, await, and async", () => {
+    validExpr(new Shift.FunctionExpression({name: null, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+    validExpr(new Shift.FunctionExpression({name: null, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [BI], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+    invalidExpr(1, new Shift.FunctionExpression({name: null, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [new Shift.BindingIdentifier({name: "if"})], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+    invalidExpr(1, new Shift.FunctionExpression({name: null, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [BI, new Shift.BindingIdentifier({name: "if"})], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+    invalidExpr(1, new Shift.FunctionExpression({name: null, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [new Shift.BindingIdentifier({name: "if"}), BI], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
   });
 
-  test("FunctionDeclaration parameters must not be reserved words other than let and yield", () => {
-    validStmt(new Shift.FunctionDeclaration({name: BI, isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
-    validStmt(new Shift.FunctionDeclaration({name: BI, isGenerator: false, params: new Shift.FormalParameters({items: [BI], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
-    invalidStmt(1, new Shift.FunctionDeclaration({name: BI, isGenerator: false, params: new Shift.FormalParameters({items: [new Shift.BindingIdentifier({name: "if"})], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
-    invalidStmt(1, new Shift.FunctionDeclaration({name: BI, isGenerator: false, params: new Shift.FormalParameters({items: [BI, new Shift.BindingIdentifier({name: "if"})], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
-    invalidStmt(1, new Shift.FunctionDeclaration({name: BI, isGenerator: false, params: new Shift.FormalParameters({items: [new Shift.BindingIdentifier({name: "if"}), BI], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+  test("FunctionDeclaration parameters must not be reserved words other than let, yield, await, and async", () => {
+    validStmt(new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+    validStmt(new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [BI], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+    invalidStmt(1, new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [new Shift.BindingIdentifier({name: "if"})], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+    invalidStmt(1, new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [BI, new Shift.BindingIdentifier({name: "if"})], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
+    invalidStmt(1, new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [new Shift.BindingIdentifier({name: "if"}), BI], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})}));
   });
 
-  test("Setter parameter must not be a reserved word other than let and yield", () => {
+  test("Setter parameter must not be a reserved word other than let, yield, await, and async", () => {
     validExpr(new Shift.ObjectExpression({properties: [new Shift.Setter({name: new Shift.StaticPropertyName({value: ID}), param: BI, body: new Shift.FunctionBody({directives: [], statements: []})})]}));
     invalidExpr(1, new Shift.ObjectExpression({properties: [new Shift.Setter({name: new Shift.StaticPropertyName({value: ID}), param: new Shift.BindingIdentifier({name: "if"}), body: new Shift.FunctionBody({directives: [], statements: []})})]}));
   });
@@ -129,8 +132,8 @@ suite("unit", () => {
   });
 
   test("ReturnStatement must be nested within a FunctionExpression or FunctionDeclaration or Getter or Setter node", () => {
-    validExpr(new Shift.FunctionExpression({name: null, isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: [new Shift.ReturnStatement({expression: null})]})}));
-    validStmt(new Shift.FunctionDeclaration({name: BI, isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: [new Shift.ReturnStatement({expression: null})]})}));
+    validExpr(new Shift.FunctionExpression({name: null, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: [new Shift.ReturnStatement({expression: null})]})}));
+    validStmt(new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: [new Shift.ReturnStatement({expression: null})]})}));
     validExpr(new Shift.ObjectExpression({properties: [new Shift.Getter({name: new Shift.StaticPropertyName({value: ID}), body: new Shift.FunctionBody({directives: [], statements: [new Shift.ReturnStatement({expression: null})]})})]}));
     validExpr(new Shift.ObjectExpression({properties: [new Shift.Setter({name: new Shift.StaticPropertyName({value: ID}), param: BI, body: new Shift.FunctionBody({directives: [], statements: [new Shift.ReturnStatement({expression: null})]})})]}));
     invalidStmt(1, new Shift.ReturnStatement({expression: null}));
@@ -301,14 +304,14 @@ suite("unit", () => {
 
   test("Binding identifiers named '*default*' must only appear as names of default-exported functions or classes", () => {
     let binding = new Shift.BindingIdentifier({name: "*default*"});
-    let exportDefault = new Shift.ExportDefault({body: new Shift.FunctionDeclaration({name: binding, isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})})});
+    let exportDefault = new Shift.ExportDefault({body: new Shift.FunctionDeclaration({name: binding, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})})});
     let module = new Shift.Module({directives: [], items: [exportDefault]});
     valid(module);
 
     exportDefault.body = new Shift.ClassDeclaration({name: binding, super: null, elements: []});
     valid(module);
 
-    exportDefault.body = new Shift.FunctionExpression({name: binding, isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})});
+    exportDefault.body = new Shift.FunctionExpression({name: binding, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})});
     invalid(1, module);
 
     exportDefault.body = new Shift.ClassExpression({name: binding, super: null, elements: []});
@@ -321,9 +324,9 @@ suite("unit", () => {
     invalidStmt(1, block(returnStmt));
 
     let body = new Shift.FunctionBody({directives: [], statements: [returnStmt]});
-    validStmt(new Shift.FunctionDeclaration({name: BI, isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body})); 
-    validExpr(new Shift.FunctionExpression({name: BI, isGenerator: false, params: new Shift.FormalParameters({items: [], rest: null}), body})); 
-    validExpr(new Shift.ArrowExpression({params: new Shift.FormalParameters({items: [], rest: null}), body})); 
+    validStmt(new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body})); 
+    validExpr(new Shift.FunctionExpression({name: BI, isGenerator: false, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body})); 
+    validExpr(new Shift.ArrowExpression({isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body})); 
   });
 
   test("Yield expressions must only appear in generators", () => {
@@ -331,19 +334,19 @@ suite("unit", () => {
     let body = new Shift.FunctionBody({directives: [], statements: [new Shift.ExpressionStatement({expression: yieldExpr})]});
     invalidExpr(1, yieldExpr);
 
-    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: true, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body});
     validExpr(fnExpr);
 
     fnExpr.isGenerator = false;
     invalidExpr(1, fnExpr);
 
-    let fnDecl = new Shift.FunctionDeclaration({name: BI, isGenerator: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+    let fnDecl = new Shift.FunctionDeclaration({name: BI, isGenerator: true, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body});
     validStmt(fnDecl);
 
     fnDecl.isGenerator = false;
     invalidStmt(1, fnDecl);
 
-    let method = new Shift.Method({name: new Shift.StaticPropertyName({value: ID}), isGenerator: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+    let method = new Shift.Method({name: new Shift.StaticPropertyName({value: ID}), isGenerator: true, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body});
     let objExpr = new Shift.ObjectExpression({properties: [method]});
     validExpr(objExpr);
 
@@ -356,19 +359,19 @@ suite("unit", () => {
     let body = new Shift.FunctionBody({directives: [], statements: [new Shift.ExpressionStatement({expression: yieldExpr})]});
     invalidExpr(1, yieldExpr);
 
-    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: true, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body});
     validExpr(fnExpr);
 
     fnExpr.isGenerator = false;
     invalidExpr(1, fnExpr);
 
-    let fnDecl = new Shift.FunctionDeclaration({name: BI, isGenerator: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+    let fnDecl = new Shift.FunctionDeclaration({name: BI, isGenerator: true, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body});
     validStmt(fnDecl);
 
     fnDecl.isGenerator = false;
     invalidStmt(1, fnDecl);
 
-    let method = new Shift.Method({name: new Shift.StaticPropertyName({value: ID}), isGenerator: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+    let method = new Shift.Method({name: new Shift.StaticPropertyName({value: ID}), isGenerator: true, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body});
     let objExpr = new Shift.ObjectExpression({properties: [method]});
     validExpr(objExpr);
 
@@ -379,10 +382,10 @@ suite("unit", () => {
   test("Yield must not be contained in ArrowExpressions", () => {
     let yieldExpr = new Shift.YieldExpression({expression: null});
     let params = new Shift.FormalParameters({items: [new Shift.BindingWithDefault({binding: new Shift.BindingIdentifier({name: "a"}), init: new Shift.LiteralNullExpression})], rest: null});
-    let arrow = new Shift.ArrowExpression({params, body: new Shift.LiteralNullExpression});
+    let arrow = new Shift.ArrowExpression({params, isAsync: false, body: new Shift.LiteralNullExpression});
 
     let body = new Shift.FunctionBody({directives: [], statements: [new Shift.ExpressionStatement({expression: arrow})]});
-    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: true, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body});
 
     validExpr(fnExpr);
 
@@ -391,15 +394,15 @@ suite("unit", () => {
 
     params.items[0].init = new Shift.LiteralNullExpression;
     arrow.body = yieldExpr;
-    invalidExpr(2, fnExpr);
+    invalidExpr(1, fnExpr);
   });
 
   test("Yield must not be the computed name of a generator method outside of a generator context", () => {
     let yieldExpr = new Shift.YieldExpression({expression: null});
-    let obj = new Shift.ObjectExpression({properties: [new Shift.Method({isGenerator: true, name: new Shift.ComputedPropertyName({expression: yieldExpr}), params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})})]});
+    let obj = new Shift.ObjectExpression({properties: [new Shift.Method({isGenerator: true, isAsync: false, name: new Shift.ComputedPropertyName({expression: yieldExpr}), params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})})]});
 
     let body = new Shift.FunctionBody({directives: [], statements: [new Shift.ExpressionStatement({expression: obj})]});
-    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: true, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body});
 
     validExpr(fnExpr);
 
@@ -413,9 +416,9 @@ suite("unit", () => {
       directives: [],
       statements: [new Shift.ExpressionStatement({expression: new Shift.YieldExpression({expression: null})})]
     });
-    let nested = [new Shift.FunctionDeclaration({name: BI, isGenerator: true, params: emptyParams, body: yieldBody})];
+    let nested = [new Shift.FunctionDeclaration({name: BI, isGenerator: true, isAsync: false, params: emptyParams, body: yieldBody})];
 
-    let outer = new Shift.FunctionDeclaration({name: BI, isGenerator: true, params: emptyParams, body: new Shift.FunctionBody({
+    let outer = new Shift.FunctionDeclaration({name: BI, isGenerator: true, isAsync: false, params: emptyParams, body: new Shift.FunctionBody({
       directives: [],
       statements: nested
     })});
@@ -425,7 +428,7 @@ suite("unit", () => {
     nested[0].isGenerator = false;
     invalidStmt(1, outer);
 
-    nested[0] = new Shift.ExpressionStatement({expression: new Shift.FunctionExpression({name: BI, isGenerator: true, params: emptyParams, body: yieldBody})})
+    nested[0] = new Shift.ExpressionStatement({expression: new Shift.FunctionExpression({name: BI, isGenerator: true, isAsync: false, params: emptyParams, body: yieldBody})})
     validStmt(outer);
 
     nested[0].expression.isGenerator = false;
@@ -437,9 +440,118 @@ suite("unit", () => {
     nested[0] = new Shift.ObjectExpression({properties: [new Shift.Setter({name: new Shift.StaticPropertyName({value: ID}), param: BI, body: yieldBody})]});
     invalidStmt(1, outer);
   });
+  
+  test("Async functions must not be generators", () => {
+    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: false, isAsync: true, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})});
+    validExpr(fnExpr);
+
+    fnExpr.isGenerator = true;
+    invalidExpr(1, fnExpr);
+
+    let fnDecl = new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: true, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})});
+    validStmt(fnDecl);
+
+    fnDecl.isGenerator = true;
+    invalidStmt(1, fnDecl);
+
+    let method = new Shift.Method({name: new Shift.StaticPropertyName({value: ID}), isGenerator: false, isAsync: true, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})});
+    let objExpr = new Shift.ObjectExpression({properties: [method]});
+    validExpr(objExpr);
+
+    method.isGenerator = true;
+    invalidExpr(1, objExpr);
+  });
+
+  test("Await expressions must only appear in async functions", () => {
+    let awaitExpr = new Shift.AwaitExpression({expression: IE});
+    let body = new Shift.FunctionBody({directives: [], statements: [new Shift.ExpressionStatement({expression: awaitExpr})]});
+    invalidExpr(1, awaitExpr);
+
+    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: false, isAsync: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+    validExpr(fnExpr);
+
+    fnExpr.isAsync = false;
+    invalidExpr(1, fnExpr);
+
+    let fnDecl = new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+    validStmt(fnDecl);
+
+    fnDecl.isAsync = false;
+    invalidStmt(1, fnDecl);
+
+    let method = new Shift.Method({name: new Shift.StaticPropertyName({value: ID}), isGenerator: false, isAsync: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+    let objExpr = new Shift.ObjectExpression({properties: [method]});
+    validExpr(objExpr);
+
+    method.isAsync = false;
+    invalidExpr(1, objExpr);
+  });
+
+  test("Await must not be contained in FormalParameters", () => {
+    let awaitExpr = new Shift.AwaitExpression({expression: IE});
+    let params = new Shift.FormalParameters({items: [new Shift.BindingWithDefault({binding: new Shift.BindingIdentifier({name: "a"}), init: new Shift.LiteralNullExpression})], rest: null});
+    let arrow = new Shift.ArrowExpression({params, isAsync: false, body: new Shift.LiteralNullExpression});
+
+    let body = new Shift.FunctionBody({directives: [], statements: [new Shift.ExpressionStatement({expression: arrow})]});
+    let fnParams = new Shift.FormalParameters({items: [new Shift.BindingWithDefault({binding: new Shift.BindingIdentifier({name: "a"}), init: new Shift.LiteralNullExpression})], rest: null});
+    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: true, isAsync: false, params: fnParams, body});
+
+    validExpr(fnExpr);
+
+    params.items[0].init = awaitExpr;
+    invalidExpr(2, fnExpr);
+
+    params.items[0].init = new Shift.LiteralNullExpression;
+    fnParams.items[0].init = awaitExpr;
+    invalidExpr(1, fnExpr);
+  });
+
+  test("Await must not be the computed name of an async method outside of an async context", () => {
+    let awaitExpr = new Shift.AwaitExpression({expression: IE});
+    let obj = new Shift.ObjectExpression({properties: [new Shift.Method({isGenerator: false, isAsync: true, name: new Shift.ComputedPropertyName({expression: awaitExpr}), params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})})]});
+
+    let body = new Shift.FunctionBody({directives: [], statements: [new Shift.ExpressionStatement({expression: obj})]});
+    let fnExpr = new Shift.FunctionExpression({name: null, isGenerator: false, isAsync: true, params: new Shift.FormalParameters({items: [], rest: null}), body});
+    
+    validExpr(fnExpr);
+
+    fnExpr.isAsync = false;
+    invalidExpr(1, fnExpr);
+  });
+
+  test("Await must not be in a nested non-async function", () => {
+    let emptyParams = new Shift.FormalParameters({items: [], rest: null});
+    let awaitBody = new Shift.FunctionBody({
+      directives: [],
+      statements: [new Shift.ExpressionStatement({expression: new Shift.AwaitExpression({expression: IE})})]
+    });
+    let nested = [new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: true, params: emptyParams, body: awaitBody})];
+
+    let outer = new Shift.FunctionDeclaration({name: BI, isGenerator: false, isAsync: true, params: emptyParams, body: new Shift.FunctionBody({
+      directives: [],
+      statements: nested
+    })});
+
+    validStmt(outer);
+
+    nested[0].isAsync = false;
+    invalidStmt(1, outer);
+
+    nested[0] = new Shift.ExpressionStatement({expression: new Shift.FunctionExpression({name: BI, isGenerator: false, isAsync: true, params: emptyParams, body: awaitBody})})
+    validStmt(outer);
+
+    nested[0].expression.isAsync = false;
+    invalidStmt(1, outer);
+
+    nested[0] = new Shift.ObjectExpression({properties: [new Shift.Getter({name: new Shift.StaticPropertyName({value: ID}), body: awaitBody})]});
+    invalidStmt(1, outer);
+
+    nested[0] = new Shift.ObjectExpression({properties: [new Shift.Setter({name: new Shift.StaticPropertyName({value: ID}), param: BI, body: awaitBody})]});
+    invalidStmt(1, outer);
+  });
 
   test("Declarations as statements", () => {
-    let decl = new Shift.FunctionDeclaration({name: BI, isGenerator: true, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})});
+    let decl = new Shift.FunctionDeclaration({name: BI, isGenerator: true, isAsync: false, params: new Shift.FormalParameters({items: [], rest: null}), body: new Shift.FunctionBody({directives: [], statements: []})});
 
     invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: decl, alternate: STMT}));
     invalidStmt(1, new Shift.IfStatement({test: EXPR, consequent: STMT, alternate: decl}));

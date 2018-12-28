@@ -77,16 +77,7 @@ function isProblematicIfStatement(node) {
 }
 
 function isValidIdentifier(name) {
-  return name === 'let' || name === 'yield' || name === 'enum' || isIdentifierNameES6(name) && !isReservedWordES6(name);
-  if (name.length === 0) {
-    return false;
-  }
-  try {
-    let res = (new Tokenizer(name)).scanIdentifier();
-    return (res.type === TokenType.IDENTIFIER || res.type === TokenType.LET || res.type === TokenType.YIELD) && res.value === name;
-  } catch(e) {
-    return false;
-  }
+  return name === 'let' || name === 'yield' || name === 'await' || name === 'async' || name === 'enum' || isIdentifierNameES6(name) && !isReservedWordES6(name);
 }
 
 function isValidIdentifierName(name) {
@@ -147,6 +138,7 @@ export class Validator extends MonoidalReducer {
   }
 
   reduceArrowExpression(node, {params, body}) {
+    body = node.isAsync ? body.clearAwaitExpressionsNotInAsyncContext() : body.enforceAwaitExpressionsNotInAsyncContext();
     let s = super.reduceArrowExpression(node, {params, body: body.enforceYields()});
     return s;
   }
@@ -265,7 +257,7 @@ export class Validator extends MonoidalReducer {
 
   reduceFormalParameters(node, {items, rest}) {
     let s = super.reduceFormalParameters(node, {items, rest});
-    s = s.enforceYields();
+    s = s.enforceYields().enforceAwaitExpressionsNotInAsyncContext();
     return s;
   }
 
@@ -277,18 +269,26 @@ export class Validator extends MonoidalReducer {
 
   reduceFunctionDeclaration(node, {name, params, body}) {
     body = node.isGenerator ? body.clearYields() : body.enforceYields();
+    body = node.isAsync ? body.clearAwaitExpressionsNotInAsyncContext() : body.enforceAwaitExpressionsNotInAsyncContext();
     let s = super.reduceFunctionDeclaration(node, {name, params, body});
+    if (node.isGenerator && node.isAsync) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.ASYNC_GENERATOR_FUNCTION));
+    }
     return s;
   }
 
   reduceFunctionExpression(node, {name, params, body}) {
     body = node.isGenerator ? body.clearYields() : body.enforceYields();
+    body = node.isAsync ? body.clearAwaitExpressionsNotInAsyncContext() : body.enforceAwaitExpressionsNotInAsyncContext();
     let s = super.reduceFunctionExpression(node, {name, params, body});
-    return s;
+    if (node.isGenerator && node.isAsync) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.ASYNC_GENERATOR_FUNCTION));
+    }
+   return s;
   }
 
   reduceGetter(node, {name, body}) {
-    let s = super.reduceGetter(node, {name, body: body.enforceYields()});
+    let s = super.reduceGetter(node, {name, body: body.enforceYields().enforceAwaitExpressionsNotInAsyncContext()});
     return s;
   }
 
@@ -355,7 +355,11 @@ export class Validator extends MonoidalReducer {
 
   reduceMethod(node, {params, body, name}) {
     body = node.isGenerator ? body.clearYields() : body.enforceYields();
+    body = node.isAsync ? body.clearAwaitExpressionsNotInAsyncContext() : body.enforceAwaitExpressionsNotInAsyncContext();
     let s = super.reduceMethod(node, {params, body, name});
+    if (node.isGenerator && node.isAsync) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.ASYNC_GENERATOR_FUNCTION));
+    }
     return s;
   }
 
@@ -364,6 +368,7 @@ export class Validator extends MonoidalReducer {
     s = s.enforceFreeReturnStatements();
     s = s.enforceBindingIdentifiersCalledDefault();
     s = s.enforceYields();
+    s = s.enforceAwaitExpressionsNotInAsyncContext();
     return s;
   }
 
@@ -378,11 +383,12 @@ export class Validator extends MonoidalReducer {
     s = s.enforceFreeReturnStatements();
     s = s.enforceBindingIdentifiersCalledDefault();
     s = s.enforceYields();
+    s = s.enforceAwaitExpressionsNotInAsyncContext();
     return s;
   }
 
   reduceSetter(node, {name, param, body}) {
-    let s = super.reduceSetter(node, {name, param, body: body.enforceYields()});
+    let s = super.reduceSetter(node, {name, param, body: body.enforceYields().enforceAwaitExpressionsNotInAsyncContext()});
     return s;
   }
 
@@ -447,6 +453,12 @@ export class Validator extends MonoidalReducer {
   reduceYieldExpression(node, {expression}) {
     let s = super.reduceYieldExpression(node, {expression});
     s = s.addYieldExpressionNotInGeneratorContext(node);
+    return s;
+  }
+
+  reduceAwaitExpression(node, {expression}) {
+    let s = super.reduceAwaitExpression(node, {expression});
+    s = s.addAwaitExpressionNotInAsyncContext(node);
     return s;
   }
 
