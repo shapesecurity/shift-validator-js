@@ -20,18 +20,19 @@ import {validStmt, invalidStmt, validExpr, invalidExpr, valid, invalid, wrapIter
 
 suite("unit", () => {
   test("LiteralRegExpExpression value must be a valid RegExp", () => {
-    return; // TODO patternAcceptor in parser is currently broken, so we don't have validation for regexs
-    validExpr(new Shift.LiteralRegExpExpression({pattern: "a", flags: ""}));
-    validExpr(new Shift.LiteralRegExpExpression({pattern: "a", flags: "g"}));
-    validExpr(new Shift.LiteralRegExpExpression({pattern: "\\/", flags: ""}));
-    validExpr(new Shift.LiteralRegExpExpression({pattern: "\\/", flags: "g"}));
-    validExpr(new Shift.LiteralRegExpExpression({pattern: "/", flags: ""}));
-    validExpr(new Shift.LiteralRegExpExpression({pattern: "/", flags: "g"}));
-    validExpr(new Shift.LiteralRegExpExpression({pattern: "", flags: ""}));
-    validExpr(new Shift.LiteralRegExpExpression({pattern: "", flags: "g"}));
-    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "[", flags: ""}));
-    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "(", flags: ""}));
-    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: ")", flags: ""}));
+    validExpr(new Shift.LiteralRegExpExpression({pattern: "a", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    validExpr(new Shift.LiteralRegExpExpression({pattern: "a", global: true, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    validExpr(new Shift.LiteralRegExpExpression({pattern: "\\/", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    validExpr(new Shift.LiteralRegExpExpression({pattern: "\\/", global: true, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    validExpr(new Shift.LiteralRegExpExpression({pattern: "/", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    validExpr(new Shift.LiteralRegExpExpression({pattern: "/", global: true, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    validExpr(new Shift.LiteralRegExpExpression({pattern: "", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    validExpr(new Shift.LiteralRegExpExpression({pattern: "", global: true, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "[", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "]", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: true}));
+    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "(", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: false}));
+    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: ")", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: true}));
+    invalidExpr(1, new Shift.LiteralRegExpExpression({pattern: "(", global: false, ignoreCase: false, multiLine: false, sticky: false, unicode: true}));
   });
 
   test("Identifier name member must be a valid IdentifierName", () => {

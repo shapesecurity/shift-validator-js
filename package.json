@@ -20,7 +20,8 @@
   "dependencies": {
     "esutils": "2.0.2",
     "shift-parser": "5.0.0",
-    "shift-reducer": "4.0.0"
+    "shift-reducer": "4.0.0",
+    "shift-regexp-acceptor": "^1.0.1"
   },
   "devDependencies": {
     "babel-cli": "6.3.13",
