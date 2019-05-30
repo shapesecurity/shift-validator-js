@@ -19,9 +19,9 @@
   },
   "dependencies": {
     "esutils": "2.0.2",
-    "shift-parser": "6.0.0",
-    "shift-reducer": "5.0.0",
-    "shift-regexp-acceptor": "1.0.1"
+    "shift-parser": "7.0.0",
+    "shift-reducer": "6.0.0",
+    "shift-regexp-acceptor": "2.0.2"
   },
   "devDependencies": {
     "babel-cli": "6.3.13",
@@ -29,7 +29,7 @@
     "babel-preset-es2015": "6.3.13",
     "everything.js": "1.0.3",
     "mocha": "2.3.4",
-    "shift-ast": "5.0.0"
+    "shift-ast": "6.0.0"
   },
   "keywords": [
     "Shift",
