@@ -400,6 +400,14 @@ export class Validator extends MonoidalReducer {
     return s;
   }
 
+  reduceStaticMemberAssignmentTarget(node, { object }) {
+    let s = super.reduceStaticMemberAssignmentTarget(node, {object});
+    if (!isIdentifierNameES6(node.property)) {
+      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_STATIC_MEMBER_ASSIGNMENT_TARGET_PROPERTY_NAME));
+    }
+    return s;
+  }
+
   reduceTemplateElement(node) {
     let s = super.reduceTemplateElement(node);
     if (!isTemplateElement(node.rawValue)) {

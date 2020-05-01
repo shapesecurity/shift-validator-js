@@ -41,6 +41,7 @@ export default {
   VALID_AWAIT_EXPRESSION_POSITION: "AwaitExpression is only allowed within an async function or method",
   VALID_YIELD_GENERATOR_EXPRESSION_POSITION: "YieldGeneratorExpression is only allowed within a generator function or method",
   VALID_STATIC_MEMBER_EXPRESSION_PROPERTY_NAME: "The property field of StaticMemberExpression must be a valid identifier name",
+  VALID_STATIC_MEMBER_ASSIGNMENT_TARGET_PROPERTY_NAME: "The property field of StaticMemberAssignmentTarget must be a valid identifier name",
   VALID_TEMPLATE_ELEMENT_VALUE: "The raw value field of TemplateElement must match the ES6 grammar production TemplateCharacters",
   ALTERNATING_TEMPLATE_EXPRESSION_ELEMENTS: "The elements field of TemplateExpression must be an alternating list of TemplateElement and Expression, starting and ending with a TemplateElement",
   NOT_EMPTY_VARIABLE_DECLARATORS_LIST: "The declarators field in VariableDeclaration must not be an empty list",

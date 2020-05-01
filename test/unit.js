@@ -41,15 +41,9 @@ suite("unit", () => {
     validExpr(new Shift.IdentifierExpression({name: "$"}));
     validExpr(new Shift.IdentifierExpression({name: "_"}));
     validExpr(new Shift.IdentifierExpression({name: "_$0x"}));
-    validExpr(new Shift.StaticMemberExpression({object: EXPR, property: ID}));
-    validExpr(new Shift.StaticMemberExpression({object: EXPR, property: "if"}));
-    validExpr(new Shift.ObjectExpression({properties: [new Shift.DataProperty({name: new Shift.StaticPropertyName({value: "if"}), expression: EXPR})]}));
     invalidExpr(1, new Shift.IdentifierExpression({name: ""}));
     invalidExpr(1, new Shift.IdentifierExpression({name: "a-b"}));
     invalidExpr(1, new Shift.IdentifierExpression({name: "0x0"}));
-    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: ""}));
-    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: "0"}));
-    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: "a-b"}));
   });
 
   test("IdentifierExpression must not contain Identifier with reserved word name other than let, yield, await, and async", () => {
@@ -231,15 +225,26 @@ suite("unit", () => {
     invalid(1, module);
   });
 
-  test("Static property names must be identifiers", () => {
-    let expr = new Shift.StaticMemberExpression({object: EXPR, property: "if"});
-    validExpr(expr);
-
-    expr.property = "1";
-    invalidExpr(1, expr);
-
-    expr.property = "a^";
-    invalidExpr(1, expr);
+  test("Static member access and static member assignment property names must be IdentifierNames", () => {
+    validExpr(new Shift.StaticMemberExpression({object: EXPR, property: "a"}));
+    validExpr(new Shift.StaticMemberExpression({object: EXPR, property: "if"}));
+    validExpr(new Shift.StaticMemberExpression({object: EXPR, property: "Infinity"}));
+    validExpr(new Shift.StaticMemberExpression({object: EXPR, property: "undefined"}));
+    validExpr(new Shift.StaticMemberExpression({object: EXPR, property: "null"}));
+    validExpr(new Shift.StaticMemberAssignmentTarget({object: EXPR, property: "a"}));
+    validExpr(new Shift.StaticMemberAssignmentTarget({object: EXPR, property: "if"}));
+    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: "1"}));
+    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: "a&"}));
+    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: ""}));
+    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: "0"}));
+    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: "0n"}));
+    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: "9e999"}));
+    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: "9e9"}));
+    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: " 0"}));
+    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: "-0"}));
+    invalidExpr(1, new Shift.StaticMemberExpression({object: EXPR, property: "a-b"}));
+    invalidExpr(1, new Shift.StaticMemberAssignmentTarget({object: EXPR, property: "1"}));
+    invalidExpr(1, new Shift.StaticMemberAssignmentTarget({object: EXPR, property: "a^"}));
   });
 
   test("TemplateElements must not contain forbidden substrings", () => {
