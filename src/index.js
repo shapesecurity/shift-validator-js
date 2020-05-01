@@ -408,14 +408,6 @@ export class Validator extends MonoidalReducer {
     return s;
   }
 
-  reduceStaticPropertyName(node) {
-    let s = super.reduceStaticPropertyName(node);
-    if (!(isIdentifierNameES6(node.value) || !isNaN(node.value))) {
-      s = s.addError(new ValidationError(node, ValidationErrorMessages.VALID_STATIC_PROPERTY_NAME));
-    }
-    return s;
-  }
-
   reduceTemplateElement(node) {
     let s = super.reduceTemplateElement(node);
     if (!isTemplateElement(node.rawValue)) {
