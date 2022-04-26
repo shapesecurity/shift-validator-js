@@ -18,7 +18,7 @@ const { EarlyErrorChecker, Tokenizer, TokenType } = require("shift-parser");
 const { reduce, MonoidalReducer } = require("shift-reducer");
 const { keyword, code } = require("esutils");
 
-const isValidRegex = require("shift-regexp-acceptor").default;
+const isValidRegex = require("shift-regexp-acceptor");
 
 const { isIdentifierNameES6, isReservedWordES6 } = keyword;
 const { isIdentifierStartES6: isIdentifierStart, isIdentifierPartES6: isIdentifierPart } = code;
