@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import ValidationErrorMessages from "./validation-errors";
+const ValidationErrorMessages = require("./validation-errors");
 
-export class ValidationContext {
+class ValidationContext {
   constructor({
     errors = [],
     freeReturnStatements = [],
@@ -168,10 +168,15 @@ export class ValidationContext {
   }
 }
 
-export class ValidationError extends Error {
+class ValidationError extends Error {
   constructor(node, message) {
     super();
     this.node = node;
     this.message = message;
   }
 }
+
+module.exports = {
+  ValidationContext,
+  ValidationError,
+};

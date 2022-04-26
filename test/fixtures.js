@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import fs from "fs";
-import assert from "assert";
+const fs = require("fs");
+const assert = require("assert");
 
-import {parseScript, parseModule} from "shift-parser";
+const { parseScript, parseModule } = require("shift-parser");
 
-import isValid, {Validator} from "../";
+const { isValid, Validator } = require("../");
 
 suite("fixtures", () => {
   test("validator is valid", () => {
