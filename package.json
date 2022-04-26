@@ -1,6 +1,6 @@
 {
   "name": "shift-validator",
-  "version": "5.0.1",
+  "version": "6.0.0",
   "description": "validator for the Shift AST format",
   "author": "Shape Security",
   "homepage": "https://github.com/shapesecurity/shift-validator-js",
