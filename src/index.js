@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-import {EarlyErrorChecker, Tokenizer, TokenType} from "shift-parser";
-import reduce, {MonoidalReducer} from "shift-reducer";
-import {keyword, code} from "esutils";
+const { EarlyErrorChecker, Tokenizer, TokenType } = require("shift-parser");
+const { reduce, MonoidalReducer } = require("shift-reducer");
+const { keyword, code } = require("esutils");
 
-import isValidRegex from "shift-regexp-acceptor";
+const isValidRegex = require("shift-regexp-acceptor").default;
 
-const {isIdentifierNameES6, isReservedWordES6} = keyword;
-const {isIdentifierStartES6: isIdentifierStart, isIdentifierPartES6: isIdentifierPart} = code;
+const { isIdentifierNameES6, isReservedWordES6 } = keyword;
+const { isIdentifierStartES6: isIdentifierStart, isIdentifierPartES6: isIdentifierPart } = code;
 
-import {ValidationContext, ValidationError} from "./validation-context";
-import ValidationErrorMessages from "./validation-errors";
+const { ValidationContext, ValidationError } = require("./validation-context");
+const ValidationErrorMessages = require("./validation-errors");
 
-export default function isValid(node) {
+function isValid(node) {
   return Validator.validate(node).length === 0;
 }
 
@@ -128,7 +128,7 @@ function checkIllegalBody(node, s, {allowFunctions = false} = {}) {
   return s;
 }
 
-export class Validator extends MonoidalReducer {
+class Validator extends MonoidalReducer {
   constructor() {
     super(ValidationContext);
   }
@@ -475,4 +475,10 @@ export class Validator extends MonoidalReducer {
     s = s.addYieldGeneratorExpressionNotInGeneratorContext(node);
     return s;
   }
+}
+
+module.exports = {
+  default: isValid,
+  isValid,
+  Validator
 }

@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-import assert from "assert";
+const assert = require("assert");
 
-import * as Shift from "shift-ast";
-import isValid, {Validator} from "../";
+const Shift = require("shift-ast");
+const { isValid, Validator } = require("../");
 
-export function assertValid(errs) {
+function assertValid(errs) {
   if (errs.length > 0) {
     errs.forEach((err) => console.error(err.message, JSON.stringify(err.node)));
   }
   assert.equal(0, errs.length);
 }
 
-export function validStmt(stmt) {
+function validStmt(stmt) {
   let script = wrapScript(stmt);
   assert(isValid(script));
   assertValid(Validator.validate(script));
 }
 
-export function invalidStmt(numExpectedErrors, stmt) {
+function invalidStmt(numExpectedErrors, stmt) {
   let script = wrapScript(stmt);
   assert(!isValid(script));
   let errs = Validator.validate(script);
@@ -43,13 +43,13 @@ export function invalidStmt(numExpectedErrors, stmt) {
   assert.equal(errs.length, numExpectedErrors);
 }
 
-export function validExpr(expr) {
+function validExpr(expr) {
   let script = wrapScript(exprStmt(expr));
   assert(isValid(script));
   assertValid(Validator.validate(script));
 }
 
-export function invalidExpr(numExpectedErrors, expr) {
+function invalidExpr(numExpectedErrors, expr) {
   let script = wrapScript(exprStmt(expr));
   assert(!isValid(script));
   let errs = Validator.validate(script);
@@ -60,43 +60,67 @@ export function invalidExpr(numExpectedErrors, expr) {
   assert.equal(errs.length, numExpectedErrors);
 }
 
-export function valid(program) {
+function valid(program) {
   assert(isValid(program));
   assertValid(Validator.validate(program));
 }
 
-export function invalid(numExpectedErrors, program) {
+function invalid(numExpectedErrors, program) {
   assert(!isValid(program));
   let errs = Validator.validate(program);
   assert.notEqual(errs.length, 0, "expression should have errors");
   assert.equal(errs.length, numExpectedErrors);
 }
 
-export function exprStmt(expr) {
+function exprStmt(expr) {
   return new Shift.ExpressionStatement({expression: expr});
 }
 
-export function label(l, stmt) {
+function label(l, stmt) {
   return new Shift.LabeledStatement({label: l, body: stmt});
 }
-export function wrapIter(stmt) {
+function wrapIter(stmt) {
   return new Shift.WhileStatement({test: new Shift.LiteralBooleanExpression({value: true}), body: stmt});
 }
 
-export function block(stmt) {
+function block(stmt) {
   return new Shift.BlockStatement({block: new Shift.Block({statements: [stmt]})});
 }
 
-export const BLOCK = new Shift.Block({statements: []});
-export const BLOCK_STMT = new Shift.BlockStatement({block: BLOCK});
-export const EXPR = new Shift.LiteralNullExpression;
-export const ATI = new Shift.AssignmentTargetIdentifier({name: "a"});
-export const BI = new Shift.BindingIdentifier({name: "a"});
-export const IE = new Shift.IdentifierExpression({name: "a"});
-export const ID = "a";
-export const NUM = new Shift.LiteralNumericExpression({value: 0});
-export const STMT = new Shift.EmptyStatement;
+const BLOCK = new Shift.Block({statements: []});
+const BLOCK_STMT = new Shift.BlockStatement({block: BLOCK});
+const EXPR = new Shift.LiteralNullExpression;
+const ATI = new Shift.AssignmentTargetIdentifier({name: "a"});
+const BI = new Shift.BindingIdentifier({name: "a"});
+const IE = new Shift.IdentifierExpression({name: "a"});
+const ID = "a";
+const NUM = new Shift.LiteralNumericExpression({value: 0});
+const STMT = new Shift.EmptyStatement;
 
-export function wrapScript(stmt) {
+function wrapScript(stmt) {
   return new Shift.Script({directives: [], statements: [stmt]});
 }
+
+module.exports = {
+  assertValid,
+  validStmt,
+  invalidStmt,
+  validExpr,
+  invalidExpr,
+  valid,
+  invalid,
+  exprStmt,
+  label,
+  wrapIter,
+  block,
+  BLOCK,
+  BLOCK_STMT,
+  EXPR,
+  ATI,
+  BI,
+  IE,
+  ID,
+  NUM,
+  STMT,
+  wrapScript,
+};

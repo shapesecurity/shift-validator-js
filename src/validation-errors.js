@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-export default {
+module.exports = {
   VALID_BINDING_IDENTIFIER_NAME: "The name field of BindingIdentifier must be a valid identifier name",
   VALID_BREAK_STATEMENT_LABEL: "The label field of BreakStatement exists and must be a valid identifier name",
   VALID_CONTINUE_STATEMENT_LABEL: "The label field of ContinueStatement exists and must be a valid identifier name",

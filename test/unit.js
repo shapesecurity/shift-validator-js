@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import * as Shift from "shift-ast/checked"
-import isValid, {Validator} from "../";
+const Shift = require("shift-ast/checked");
+const { isValid, Validator } = require("../");
 
-import {validStmt, invalidStmt, validExpr, invalidExpr, valid, invalid, wrapIter, exprStmt, label, block, BLOCK, ATI, BI, IE, ID, STMT, EXPR} from "./helpers"
+const { validStmt, invalidStmt, validExpr, invalidExpr, valid, invalid, wrapIter, exprStmt, label, block, BLOCK, ATI, BI, IE, ID, STMT, EXPR } = require("./helpers");
 
 suite("unit", () => {
   test("LiteralRegExpExpression value must be a valid RegExp", () => {
