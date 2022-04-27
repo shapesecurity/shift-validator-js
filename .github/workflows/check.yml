@@ -50,8 +50,5 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Lint
-        run: npm run lint -- --quiet
-
       - name: Test
         run: npm test
